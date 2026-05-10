@@ -119,21 +119,25 @@
         }
         .hero-banner-copy-wrapper {
             overflow: hidden;
-            width: 100%;
+            width: min(100%, 860px);
             margin: 0 auto;
-            padding-top: 10px;
+            padding: 12px 18px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
         }
         .hero-banner-copy {
             display: inline-block;
             white-space: nowrap;
-            padding-left: 100%;
-            font-size: clamp(1.2rem, 2vw, 1.6rem);
-            color: #e2e8f0;
-            line-height: 1.8;
-            animation: hero-copy-scroll 16s linear infinite;
+            font-size: clamp(1.05rem, 1.7vw, 1.4rem);
+            color: #f8fafc;
+            line-height: 1.75;
+            animation: hero-copy-scroll 20s linear infinite;
+            transform: translateX(100%);
         }
         @keyframes hero-copy-scroll {
-            0% { transform: translateX(0); }
+            0% { transform: translateX(100%); }
             100% { transform: translateX(-100%); }
         }
         .search-panel {
@@ -747,3 +751,4 @@
     </script>
 </body>
 </html>
+
