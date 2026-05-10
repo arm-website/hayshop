@@ -43,7 +43,8 @@
             margin: 0;
             min-height: 100vh;
             font-family: 'Segoe UI', Arial, sans-serif;
-            background: var(--background);
+            background: var(--background) url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><defs><pattern id="classic-pattern" patternUnits="userSpaceOnUse" width="40" height="40"><rect width="40" height="40" fill="%23f1f5f9"/><path d="M0 40L40 0ZM40 40L0 0Z" stroke="%23cbd5e1" stroke-width="0.5" opacity="0.3"/></pattern></defs><rect width="100%" height="100%" fill="url(%23classic-pattern)"/></svg>');
+            background-attachment: fixed;
             color: var(--text);
             display: flex;
             flex-direction: column;
@@ -175,7 +176,7 @@
             align-items: center;
             flex-wrap: wrap;
             padding: 18px 22px;
-            margin: -60px auto 0;
+            margin: -20px auto 0;
             position: relative;
             z-index: 1;
             max-width: 1200px;
@@ -378,19 +379,7 @@
         </div>
     </header>
     <main>
-        <section class="hero" aria-label="HayShop գլխավոր հաղորդագրություններ">
-            <div class="hero-banner">
-                <div class="hero-banner-content">
-                    <h2 class="hero-banner-heading">HayShop — Ձեր հայկական առևտրային հարթակը</h2>
-                    <div class="hero-banner-copy-wrapper" aria-hidden="true">
-                        <div class="hero-banner-copy-track">
-                            <p class="hero-banner-copy">ArmShop-ը ապահով, արագ և հարմար տեղ է հայկական խանութների, ծառայությունների և վաճառողների համար: Գտեք անհրաժեշտը մեկ հարթակում և ավելացրեք Ձեր հայտարարությունը մի քանի վայրկյանում.</p>
-                            <p class="hero-banner-copy">ArmShop-ը ապահով, արագ և հարմար տեղ է հայկական խանութների, ծառայությունների և վաճառողների համար: Գտեք անհրաժեշտը մեկ հարթակում և ավելացրեք Ձեր հայտարարությունը մի քանի վայրկյանում.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+        
         <section class="search-panel" aria-label="Որոնման կառավարիչ">
             <input id="searchInput" type="text" placeholder="Որոնել անունով կամ նկարագրությամբ..." aria-label="Որո՜նել անունով կամ նկարագրությամբ">
             <select id="citySelect" aria-label="Ընտրել քաղաք">
@@ -780,3 +769,4 @@
     </script>
 </body>
 </html>
+s
