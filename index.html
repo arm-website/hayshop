@@ -12,16 +12,6 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1e293b">
-    <link rel="preconnect" href="https://pagead2.googlesyndication.com">
-    <link rel="preconnect" href="https://www.googletagmanager.com">
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7671610963386660" crossorigin="anonymous"></script>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XD8XZ00NJ5"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-XD8XZ00NJ5');
-    </script>
     <style>
         :root {
             --brand: #d97706;
@@ -127,33 +117,12 @@
             letter-spacing: 0.08em;
             line-height: 1.05;
         }
-        .rotating-text {
-            overflow: hidden;
-            height: 3.5rem;
-            position: relative;
-        }
-        .rotating-text-inner {
-            display: flex;
-            flex-direction: column;
-            animation: rotate-hero-text 16s infinite ease-in-out;
-        }
-        .text-slide {
-            min-height: 3.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: clamp(1.4rem, 2.5vw, 2rem);
-            font-weight: 700;
-            color: #f8fafc;
-            text-shadow: 0 8px 25px rgba(0, 0, 0, 0.22);
-            white-space: nowrap;
-        }
-        @keyframes rotate-hero-text {
-            0%, 18% { transform: translateY(0); }
-            20%, 38% { transform: translateY(-100%); }
-            40%, 58% { transform: translateY(-200%); }
-            60%, 78% { transform: translateY(-300%); }
-            80%, 98% { transform: translateY(0); }
+        .hero-banner-copy {
+            font-size: clamp(1.2rem, 2vw, 1.6rem);
+            color: #e2e8f0;
+            max-width: 860px;
+            margin: 0 auto;
+            line-height: 1.8;
         }
         .search-panel {
             background: rgba(255,255,255,0.96);
@@ -348,7 +317,6 @@
         @media (max-width: 900px) {
             header { flex-direction: column; align-items: flex-start; gap: 16px; }
             .search-panel { flex-direction: column; align-items: stretch; }
-            .slides { min-height: 260px; }
         }
         @media (max-width: 650px) {
             .hero { margin-top: 18px; }
@@ -372,14 +340,7 @@
             <div class="hero-banner">
                 <div class="hero-banner-content">
                     <h2 class="hero-banner-heading">HayShop — Ձեր հայկական առևտրային հարթակը</h2>
-                    <div class="rotating-text" aria-live="polite">
-                        <div class="rotating-text-inner">
-                            <div class="text-slide">ArmShop — Հայաստանի նոր առևտրային հարթակը</div>
-                            <div class="text-slide">Ապահով, արագ և հարմար օգտագործման համար  Մեքենաներ • Տեխնիկա • Տներ • Ծառայություններ</div>
-                            <div class="text-slide">Ամեն ինչ մեկ հարթակում   Գնորդներն ու վաճառողները հանդիպում են այստեղ</div>
-                            <div class="text-slide">Սկսիր հիմա ընդամենը մի քանի վայրկյանում</div>
-                        </div>
-                    </div>
+                    <p class="hero-banner-copy">ArmShop-ը ապահով, արագ և հարմար տեղ է հայկական խանութների, ծառայությունների և վաճառողների համար: Գտեք անհրաժեշտը մեկ հարթակում և ավելացրեք Ձեր հայտարարությունը մի քանի վայրկյանում:</p>
                 </div>
             </div>
         </section>
