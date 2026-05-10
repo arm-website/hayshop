@@ -1,5 +1,4 @@
-
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="hy">
 <head>
     <meta name="google-adsense-account" content="ca-pub-7671610963386660">
@@ -21,6 +20,7 @@
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 
     <style>
 .footer-container {
@@ -439,7 +439,7 @@
         </select>
         <textarea id="bNkaragir" placeholder="Նկարագրություն" style="width:100%; margin-bottom:10px;"></textarea>
         <label>Նկար:</label><input type="file" id="bLogo" accept="image/*" required style="margin-bottom:10px;">
-        <button type="submit" id="submitBtn" class="btn-glxavor" style="width:100%">Ուղարկել հաստատման</button
+        <button type="submit" id="submitBtn" class="btn-glxavor" style="width:100%">Ուղարկել հաստատման</button>
         <button type="button" onclick="pakelModal('avelacmanModal')" style="width:100%; background:none; border:none; color:gray; cursor:pointer; margin-top:10px;">Փակել</button>
     </form>
 </div></div>
@@ -457,7 +457,7 @@
         apiKey: "AIzaSyAXH7T_obCBUuG4zXhY0qpwwBfb3JgMOrI",
         authDomain: "hayshop-b54ab.firebaseapp.com",
         projectId: "hayshop-b54ab",
-        storageBucket: "hayshop-b54ab.firebasestorage.app",
+        storageBucket: "hayshop-b54ab.appspot.com",
         messagingSenderId: "342283633284",
         appId: "1:342283633284:web:7e2def7ad150124636f8d1",
         measurementId: "G-XD8XZ00NJ5",
@@ -616,9 +616,6 @@ function voronelԸստՍլայդի(bar) {
     </div>
 
 </footer>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
-</script>
 <div id="hayshop-ai" style="position: fixed; bottom: 20px; right: 20px; z-index: 10000; font-family: 'Segoe UI', sans-serif;">
     <button onclick="toggleAI()" style="background: #e74c3c; color: white; border: none; width: 60px; height: 60px; border-radius: 50%; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-size: 24px;">💬</button>
 
