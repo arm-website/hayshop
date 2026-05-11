@@ -880,10 +880,16 @@
                 body: body ? JSON.stringify(body) : null
             });
             const text = await response.text();
-            const data = text ? JSON.parse(text) : null;
+            let data = null;
+            try {
+                data = text ? JSON.parse(text) : null;
+            } catch (_error) {
+                data = null;
+            }
 
             if (!response.ok) {
-                const error = new Error(`Supabase request failed: ${response.status} ${response.statusText}`);
+                const message = data?.message || data?.error || text || response.statusText;
+                const error = new Error(`Supabase request failed: ${response.status} ${response.statusText} - ${message}`);
                 error.response = data;
                 throw error;
             }
@@ -1051,7 +1057,7 @@
 
             try {
                 const data = await supabaseRequest('advertisements', {
-                    params: 'select=*,created_at&order=approved.desc,created_at.desc'
+                    params: 'select=id,name,city,description,logo_url,approved&order=approved.desc'
                 });
                 listings = Array.isArray(data) ? data.map(normalizeListing) : [];
                 state.currentPage = 1;
@@ -1069,7 +1075,7 @@
 
             try {
                 const data = await supabaseRequest('advertisements', {
-                    params: 'select=*,created_at&approved=eq.false&order=created_at.desc'
+                    params: 'select=id,name,city,description,logo_url,approved&approved=eq.false&order=id.desc'
                 });
                 const items = Array.isArray(data) ? data.map(normalizeListing) : [];
                 pendingItems = items;
