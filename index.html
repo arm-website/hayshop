@@ -852,6 +852,7 @@
                 Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
                 Accept: 'application/json',
                 'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
                 ...headers
             };
 
@@ -861,6 +862,8 @@
             if (['POST', 'PATCH', 'DELETE'].includes(method.toUpperCase())) {
                 requestHeaders.Prefer = 'return=representation';
             }
+
+            url.searchParams.set('_', Date.now());
 
             const response = await fetch(url.toString(), {
                 method,
@@ -1344,7 +1347,7 @@
             if (!confirmApprove) return;
 
             try {
-                const url = `${SUPABASE_URL}/advertisements?id=eq.${encodeURIComponent(id)}`;
+                const url = `${SUPABASE_URL}/advertisements?id=eq.${encodeURIComponent(id)}&_=${Date.now()}`;
                 const response = await fetch(url, {
                     method: 'PATCH',
                     headers: {
@@ -1352,7 +1355,9 @@
                         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
                         Accept: 'application/json',
                         'Content-Type': 'application/json',
-                        Prefer: 'return=representation'
+                        Prefer: 'return=representation',
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
                     },
                     body: JSON.stringify({ approved: true })
                 });
@@ -1378,14 +1383,16 @@
             if (!confirmDelete) return;
 
             try {
-                const url = `${SUPABASE_URL}/advertisements?id=eq.${encodeURIComponent(id)}`;
+                const url = `${SUPABASE_URL}/advertisements?id=eq.${encodeURIComponent(id)}&_=${Date.now()}`;
                 const response = await fetch(url, {
                     method: 'DELETE',
                     headers: {
                         apikey: SUPABASE_ANON_KEY,
                         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
                         Accept: 'application/json',
-                        Prefer: 'return=representation'
+                        Prefer: 'return=representation',
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
                     }
                 });
 
@@ -1585,3 +1592,4 @@
     </script>
 </body>
 </html>
+
