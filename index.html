@@ -1212,20 +1212,31 @@
             if (!confirmApprove) return;
 
             try {
-                const response = await supabaseRequest('advertisements', {
+                const url = `${SUPABASE_URL}/advertisements?id=eq.${encodeURIComponent(id)}`;
+                const response = await fetch(url, {
                     method: 'PATCH',
-                    params: { id: `eq.${id}` },
-                    body: { approved: true }
+                    headers: {
+                        apikey: SUPABASE_ANON_KEY,
+                        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        Prefer: 'return=representation'
+                    },
+                    body: JSON.stringify({ approved: true })
                 });
 
-                console.log('Approve response:', response);
+                const text = await response.text();
+                const data = text ? JSON.parse(text) : null;
+                if (!response.ok) {
+                    throw new Error(data?.message || `Supabase request failed: ${response.status}`);
+                }
+
                 showMessage('✓ Հայտարարությունը հաջողությամբ հաստատվեց։');
                 if (isAdmin) removePendingCard(id);
                 await loadListings();
                 if (isAdmin) await loadPendingAdmin();
             } catch (error) {
                 console.error('Approve failed:', error);
-                console.error('Error details:', error.response);
                 showMessage(`✗ Հաստատման սխալ: ${error.message}`);
             }
         }
@@ -1235,19 +1246,29 @@
             if (!confirmDelete) return;
 
             try {
-                const response = await supabaseRequest('advertisements', {
+                const url = `${SUPABASE_URL}/advertisements?id=eq.${encodeURIComponent(id)}`;
+                const response = await fetch(url, {
                     method: 'DELETE',
-                    params: { id: `eq.${id}` }
+                    headers: {
+                        apikey: SUPABASE_ANON_KEY,
+                        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                        Accept: 'application/json',
+                        Prefer: 'return=representation'
+                    }
                 });
 
-                console.log('Delete response:', response);
+                const text = await response.text();
+                const data = text ? JSON.parse(text) : null;
+                if (!response.ok) {
+                    throw new Error(data?.message || `Supabase request failed: ${response.status}`);
+                }
+
                 showMessage('✓ Հայտարարությունը հաջողությամբ ջնջվեց։');
                 if (isAdmin) removePendingCard(id);
                 await loadListings();
                 if (isAdmin) await loadPendingAdmin();
             } catch (error) {
                 console.error('Delete failed:', error);
-                console.error('Error details:', error.response);
                 showMessage(`✗ Ջնջման սխալ: ${error.message}`);
             }
         }
