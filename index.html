@@ -810,8 +810,15 @@
     <script>
         const contactEmail = 'hayshop333@gmail.com';
         const adminSecret = '123456789';
-        const SUPABASE_URL = 'https://rulyfpgjujoevvfuolml.supabase.co/rest/v1';
-        const SUPABASE_STORAGE_URL = SUPABASE_URL.replace('/rest/v1', '/storage/v1');
+        // Supabase setup:
+        // 1. Create storage bucket: insert into storage.buckets (id, name, public) values ('advertisements', 'advertisements', true);
+        // 2. Create upload policy: create policy "Public upload advertisements" on storage.objects for insert to anon with check (bucket_id = 'advertisements');
+        // 3. Create read policy: create policy "Public read advertisements" on storage.objects for select to public using (bucket_id = 'advertisements');
+        // 4. Create database table: CREATE TABLE advertisements (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, name text NOT NULL, city text NOT NULL, description text NOT NULL, logo_url text, approved boolean DEFAULT false, created_at timestamptz DEFAULT now());
+        // 5. Enable RLS and create policies for the table
+        const SUPABASE_BASE_URL = 'https://rulyfpgjujoevvfuolml.supabase.co';
+        const SUPABASE_REST_URL = `${SUPABASE_BASE_URL}/rest/v1`;
+        const SUPABASE_STORAGE_URL = `${SUPABASE_BASE_URL}/storage/v1`;
         const SUPABASE_STORAGE_BUCKET = 'advertisements';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ1bHlmcGdqdWpvZXZ2ZnVvbG1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0ODE2MDUsImV4cCI6MjA5NDA1NzYwNX0._JoE2HYtZDxH8o9livkXS-DQAOLz1ea0qJ-XcGr0wlw';
 
@@ -836,7 +843,7 @@
         }
 
         async function supabaseRequest(endpoint, { method = 'GET', body = null, headers = {}, params = '' } = {}) {
-            const url = new URL(`${SUPABASE_URL}/${endpoint}`);
+            const url = new URL(`${SUPABASE_REST_URL}/${endpoint}`);
             if (params) {
                 if (typeof params === 'string') {
                     url.search = params;
@@ -1310,15 +1317,15 @@
             });
 
             if (!response.ok) {
-                let errorMessage = `Storage upload failed: ${response.status}`;
+                const text = await response.text();
+                let parsed = null;
                 try {
-                    const text = await response.text();
-                    const parsed = text ? JSON.parse(text) : null;
-                    if (parsed?.message) errorMessage = parsed.message;
+                    parsed = text ? JSON.parse(text) : null;
                 } catch (_) {
                     // ignore invalid JSON response
                 }
-                throw new Error(errorMessage);
+                const responseMessage = parsed?.message || text || response.statusText;
+                throw new Error(`Storage upload failed (${response.status}): ${responseMessage}`);
             }
 
             return getStoragePublicUrl(fileName);
@@ -1391,7 +1398,7 @@
             if (!confirmApprove) return;
 
             try {
-                const url = `${SUPABASE_URL}/advertisements?id=eq.${encodeURIComponent(id)}&_=${Date.now()}`;
+                const url = `${SUPABASE_REST_URL}/advertisements?id=eq.${encodeURIComponent(id)}&_=${Date.now()}`;
                 const response = await fetch(url, {
                     method: 'PATCH',
                     headers: {
@@ -1427,7 +1434,7 @@
             if (!confirmDelete) return;
 
             try {
-                const url = `${SUPABASE_URL}/advertisements?id=eq.${encodeURIComponent(id)}&_=${Date.now()}`;
+                const url = `${SUPABASE_REST_URL}/advertisements?id=eq.${encodeURIComponent(id)}&_=${Date.now()}`;
                 const response = await fetch(url, {
                     method: 'DELETE',
                     headers: {
