@@ -1,823 +1,570 @@
-<!DOCTYPE html>
-<html lang="hy">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HayShop - Հայկական Խանութների Հարթակ</title>
-    <meta name="description" content="HayShop-ը տրամադրում է հայկական խանութների և ծառայությունների գրացուցակը՝ արագ, պարզ և շարժական։">
-    <meta property="og:title" content="HayShop - Հայկական Խանութների Հարթակ">
-    <meta property="og:description" content="Գտեք և ավելացրեք հայկական բիզնես հայտարարություններ մեկ հարթակում։">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://armshop.store">
-    <link rel="icon" href="favicon.svg" type="image/svg+xml">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1e293b">
-    <style>
-        :root {
-            --brand: #d97706;
-            --surface: #1e293b;
-            --surface-soft: #0f172a;
-            --background: #f1f5f9;
-            --foreground: #ffffff;
-            --text: #0f172a;
-            --text-secondary: #475569;
-            --success: #22c55e;
-            --danger: #ef4444;
-            --border: #cbd5e1;
-            --shadow: 0 18px 50px rgba(15, 23, 42, 0.12);
-        }
-        *, *::before, *::after { box-sizing: border-box; }
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0,0,0,0);
-            white-space: nowrap;
-            border: 0;
-        }
-        html { scroll-behavior: smooth; }
-        body {
-            margin: 0;
-            min-height: 100vh;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: var(--background) url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><defs><pattern id="classic-pattern" patternUnits="userSpaceOnUse" width="40" height="40"><rect width="40" height="40" fill="%23f1f5f9"/><path d="M0 40L40 0ZM40 40L0 0Z" stroke="%23cbd5e1" stroke-width="0.5" opacity="0.3"/></pattern></defs><rect width="100%" height="100%" fill="url(%23classic-pattern)"/></svg>');
-            background-attachment: fixed;
-            color: var(--text);
-            display: flex;
-            flex-direction: column;
-        }
-        img { max-width: 100%; display: block; }
-        button, input, select, textarea { font: inherit; }
-        header {
-            background: var(--surface);
-            color: white;
-            padding: 18px 5%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: inset 0 -1px 0 rgba(255,255,255,0.08);
-        }
-        .brand {
-            margin: 0;
-            font-size: 1.4rem;
-            letter-spacing: 0.05em;
-            cursor: pointer;
-        }
-        .nav-btns { display: flex; gap: 10px; flex-wrap: wrap; }
-        .btn {
-            border: none;
-            border-radius: 999px;
-            padding: 12px 18px;
-            cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-            font-weight: 700;
-        }
-        .btn:hover { transform: translateY(-1px); }
-        .btn-primary { background: var(--brand); color: white; }
-        .btn-secondary { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.8); }
-        .btn-alert { background: #050000; color: white; }
-        main { flex: 1; }
-        .hero {
-            max-width: 1200px;
-            margin: 24px auto 0;
-            padding: 0 5%;
-        }
-        .hero-banner {
-            overflow: hidden;
-            border-radius: 24px;
-            background: linear-gradient(135deg, rgba(30,41,59,0.95), rgba(15,23,42,0.95));
-            box-shadow: var(--shadow);
-            min-height: 180px;
-            display: grid;
-            place-items: center;
-            padding: 30px 24px;
-            text-align: center;
-            margin-bottom: 18px;
-        }
-        .hero-banner::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at top left, rgba(255,215,120,0.14), transparent 32%), radial-gradient(circle at bottom right, rgba(34,197,94,0.12), transparent 28%);
-        }
-        .hero-banner-content {
-            position: relative;
-            z-index: 1;
-            width: min(100%, 960px);
-        }
-        .hero-banner-heading {
-            margin: 0 0 14px;
-            font-size: clamp(1.8rem, 3vw, 2.6rem);
-            color: white;
-            letter-spacing: 0.08em;
-            line-height: 1.05;
-        }
-        .hero-banner-copy-wrapper {
-            position: relative;
-            overflow: hidden;
-            width: min(100%, 860px);
-            margin: 0 auto;
-            padding: 18px 24px;
-            border-radius: 22px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            box-shadow: 0 24px 68px rgba(0, 0, 0, 0.16);
-        }
-        .hero-banner-copy-wrapper::before,
-        .hero-banner-copy-wrapper::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 88px;
-            pointer-events: none;
-            z-index: 10;
-        }
-        .hero-banner-copy-wrapper::before {
-            left: 0;
-            background: linear-gradient(90deg, rgba(15, 23, 42, 0.96), transparent);
-        }
-        .hero-banner-copy-wrapper::after {
-            right: 0;
-            background: linear-gradient(270deg, rgba(15, 23, 42, 0.96), transparent);
-        }
-        .hero-banner-copy-track {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            gap: 2.5rem;
-            animation: hero-copy-scroll 32s linear infinite;
-        }
-        .hero-banner-copy {
-            white-space: nowrap;
-            font-size: clamp(1.05rem, 1.5vw, 1.35rem);
-            color: #f8fafc;
-            letter-spacing: 0.01em;
-            line-height: 1.7;
-            margin: 0;
-            z-index: 2;
-        }
-        @keyframes hero-copy-scroll {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-        }
-        .search-panel {
-            background: rgba(255,255,255,0.96);
-            border-radius: 22px;
-            box-shadow: var(--shadow);
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            flex-wrap: wrap;
-            padding: 18px 22px;
-            margin: -20px auto 0;
-            position: relative;
-            z-index: 1;
-            max-width: 1200px;
-        }
-        .search-panel input,
-        .search-panel select {
-            flex: 1 1 220px;
-            min-width: 180px;
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 14px 16px;
-            background: white;
-            color: var(--surface-soft);
-            outline: none;
-        }
-        .search-panel button { flex: 0 0 auto; }
-        .grid {
-            display: grid;
-            max-width: 1200px;
-            margin: 0 auto;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 24px;
-            padding: 34px 5% 54px;
-        }
-        .qart {
-            background: white;
-            border-radius: 22px;
-            overflow: hidden;
-            box-shadow: var(--shadow);
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
-        }
-        .qart:hover { transform: translateY(-3px); }
-        .qart img { height: 190px; object-fit: cover; }
-        .qart-content { padding: 22px; }
-        .qart-content h3 { margin: 0 0 10px; font-size: 1.15rem; color: var(--surface-soft); }
-        .qart-content p { margin: 0 0 18px; line-height: 1.7; color: var(--text-secondary); }
-        .actions { display: grid; gap: 10px; }
-        .footer {
-            background: var(--surface);
-            color: white;
-            padding: 42px 5% 26px;
-        }
-        .footer-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 28px;
-        }
-        .footer-section h3 { margin-top: 0; font-size: 1.1rem; color: var(--brand); }
-        .footer-section p, .footer-section li { color: #cbd5e1; line-height: 1.75; }
-        .footer-section ul { list-style: none; padding: 0; margin: 0; }
-        .footer-section li { margin-bottom: 10px; }
-        .footer-bottom { text-align: center; margin-top: 34px; color: #94a3b8; font-size: 0.95rem; }
-        .modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(15,23,42,0.72);
-            backdrop-filter: blur(3px);
-            align-items: center;
-            justify-content: center;
-            padding: 18px;
-            z-index: 2000;
-        }
-        .modal.active { display: flex; }
-        .modal-body {
-            width: 100%;
-            max-width: 520px;
-            background: white;
-            border-radius: 24px;
-            padding: 28px;
-            box-shadow: var(--shadow);
-            position: relative;
-        }
-        .modal-body h3 { margin-top: 0; font-size: 1.45rem; }
-        .modal-body .form-field { margin-bottom: 16px; }
-        .modal-body input,
-        .modal-body select,
-        .modal-body textarea {
-            width: 100%;
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 14px 16px;
-            font-size: 1rem;
-            color: var(--surface-soft);
-            background: #f8fafc;
-        }
-        .modal-body textarea { min-height: 120px; resize: vertical; }
-        .modal-close {
-            position: absolute;
-            top: 18px;
-            right: 18px;
-            border: none;
-            background: none;
-            color: var(--text-secondary);
-            font-size: 22px;
-            cursor: pointer;
-        }
-        .modal-actions { display: grid; gap: 12px; margin-top: 16px; }
-        .chat-widget {
-            position: fixed;
-            right: 20px;
-            bottom: 20px;
-            z-index: 10000;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 12px;
-        }
-        .chat-toggle {
-            width: 62px;
-            height: 62px;
-            border-radius: 50%;
-            border: none;
-            background: #e74c3c;
-            color: white;
-            font-size: 28px;
-            cursor: pointer;
-            box-shadow: 0 14px 30px rgba(0,0,0,0.25);
-        }
-        .chat-box {
-            width: 320px;
-            max-width: 92vw;
-            background: white;
-            border-radius: 24px;
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            display: none;
-        }
-        .chat-box.active { display: block; }
-        .chat-header {
-            background: var(--surface);
-            color: white;
-            padding: 14px 16px;
-            font-weight: 700;
-            text-align: center;
-        }
-        .chat-body {
-            padding: 16px;
-            max-height: 260px;
-            overflow-y: auto;
-            background: #f8fafc;
-        }
-        .chat-message { margin-bottom: 12px; line-height: 1.6; }
-        .chat-message.user { text-align: right; }
-        .chat-message.bot { text-align: left; }
-        .chat-footer {
-            display: flex;
-            gap: 10px;
-            padding: 12px;
-            border-top: 1px solid #e2e8f0;
-            background: #ffffff;
-        }
-        .chat-footer input {
-            flex: 1;
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            padding: 12px 14px;
-        }
-        .chat-footer button {
-            min-width: 54px;
-            border-radius: 50%;
-            padding: 0;
-            width: 48px;
-            height: 48px;
-            background: var(--brand);
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        .empty-state {
-            grid-column: 1 / -1;
-            text-align: center;
-            color: var(--text-secondary);
-            background: rgba(226, 232, 240, 0.55);
-            border-radius: 20px;
-            padding: 42px 24px;
-        }
-        @media (max-width: 900px) {
-            header { flex-direction: column; align-items: flex-start; gap: 16px; }
-            .search-panel { flex-direction: column; align-items: stretch; }
-        }
-        @media (max-width: 650px) {
-            .hero { margin-top: 18px; }
-            .slide-content { padding: 18px; }
-            .slide-title { font-size: 1.9rem; }
-            .chat-widget { right: 14px; bottom: 14px; }
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <h1 class="brand" onclick="resetFilters()">HayShop</h1>
-        <div class="nav-btns">
-            <button type="button" class="btn btn-secondary" onclick="resetFilters()">Գլխավոր</button>
-            <button type="button" class="btn btn-primary" onclick="openModal('avelacmanModal')">+ Ավելացնել Հայտարարություն</button>
-            <button type="button" class="btn btn-alert" onclick="openModal('adminModal')">Ադմին</button>
-        </div>
-    </header>
-    <main>
-        
-        <section class="search-panel" aria-label="Որոնման կառավարիչ">
-            <input id="searchInput" type="text" placeholder="Որոնել անունով կամ նկարագրությամբ..." aria-label="Որո՜նել անունով կամ նկարագրությամբ">
-            <select id="citySelect" aria-label="Ընտրել քաղաք">
-                <option value="">Բոլոր քաղաքները</option>
-                <option value="Երևան">Երևան</option>
-                <option value="Աբովյան">Աբովյան</option>
-                <option value="Ագարակ">Ագարակ</option>
-                <option value="Ալավերդի">Ալավերդի</option>
-                <option value="Ապարան">Ապարան</option>
-                <option value="Արարատ">Արարատ</option>
-                <option value="Արթիկ">Արթիկ</option>
-                <option value="Արմավիր">Արմավիր</option>
-                <option value="Արտաշատ">Արտաշատ</option>
-                <option value="Աշտարակ">Աշտարակ</option>
-                <option value="Բերդ">Բերդ</option>
-                <option value="Բյուրեղավան">Բյուրեղավան</option>
-                <option value="Գավառ">Գավառ</option>
-                <option value="Գյումրի">Գյումրի</option>
-                <option value="Գորիս">Գորիս</option>
-                <option value="Դաստակերտ">Դաստակերտ</option>
-                <option value="Դիլիջան">Դիլիջան</option>
-                <option value="Եղեգնաձոր">Եղեգնաձոր</option>
-                <option value="Եղվարդ">Եղվարդ</option>
-                <option value="Ճամբարակ">Ճամբարակ</option>
-                <option value="Մարալիկ">Մարալիկ</option>
-                <option value="Մարտունի">Մարտունի</option>
-                <option value="Մասիս">Մասիս</option>
-                <option value="Մեղրի">Մեղրի</option>
-                <option value="Մեծամոր">Մեծամոր</option>
-                <option value="Նոր Հաճն">Նոր Հաճն</option>
-                <option value="Նոյեմբերյան">Նոյեմբերյան</option>
-                <option value="Շամլուղ">Շամլուղ</option>
-                <option value="Չարենցավան">Չարենցավան</option>
-                <option value="Ջերմուկ">Ջերմուկ</option>
-                <option value="Սիսիան">Սիսիան</option>
-                <option value="Սպիտակ">Սպիտակ</option>
-                <option value="Ստեփանավան">Ստեփանավան</option>
-                <option value="Սևան">Սևան</option>
-                <option value="Վայք">Վայք</option>
-                <option value="Վանաձոր">Վանաձոր</option>
-                <option value="Վարդենիս">Վարդենիս</option>
-                <option value="Վեդի">Վեդի</option>
-                <option value="Տաշիր">Տաշիր</option>
-                <option value="Քաջարան">Քաջարան</option>
-            </select>
-            <button type="button" class="btn btn-primary" onclick="updateListings()">Որոնել</button>
-        </section>
-        <section class="grid" id="listingGrid" aria-live="polite">
-            <div id="loading" class="empty-state">Բեռնվում է...</div>
-        </section>
-    </main>
-    <footer class="footer">
-        <div class="footer-container">
-            <div class="footer-section">
-                <h3>HayShop Հարթակի Մասին</h3>
-                <p>HayShop-ը հայկական բիզնեսների և ծառայությունների գրացուցակ է, որը օգնում է հաճախորդներին արագ գտնել տեղական առաջարկները՝ պարզ և վստահելի միջավայրում։</p>
-            </div>
-            <div class="footer-section">
-                <h3>Մենք առաջարկում ենք</h3>
-                <ul>
-                    <li>Բիզնեսի լիարժեք ներկայացվածություն</li>
-                    <li>Այլընտրանքային որոնում ըստ քաղաքի</li>
-                    <li>Վաճառքի հայտերի արագ և պարզ կառավարման հնարավորություն</li>
-                    <li>Հեշտ կապ կայքի միջոցով</li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Ինչու ընտրել մեզ</h3>
-                <p>HayShop-ը մշակված է այնպիսի արագ ու սահուն փորձի համար, որը լավ է աշխատում ինչպես աշխատասեղանի, այնպես էլ բջջային սարքերի վրա. առանց ծանր հավելվածների կամ ապակու՝ ուղղակի տեղեկատվություն։</p>
-            </div>
-        </div>
-        <div class="footer-bottom">© 2025 HayShop - Բոլոր իրավունքները պաշտպանված են</div>
-    </footer>
-    <div id="avelacmanModal" class="modal" aria-hidden="true">
-        <div class="modal-body">
-            <button class="modal-close" type="button" aria-label="Փակել" onclick="closeModal('avelacmanModal')">✕</button>
-            <h3>Ավելացնել հայտարարություն</h3>
-            <form id="avelacmanForm">
-                <div class="form-field">
-                    <input id="businessName" type="text" placeholder="Անվանում" required>
-                </div>
-                <div class="form-field">
-                    <label for="businessCity" class="sr-only">Քաղաք</label>
-                    <select id="businessCity" required>
-                        <option value="" disabled selected>Ընտրեք քաղաքը</option>
-                        <option value="Երևան">Երևան</option>
-                        <option value="Աբովյան">Աբովյան</option>
-                        <option value="Ագարակ">Ագարակ</option>
-                        <option value="Ալավերդի">Ալավերդի</option>
-                        <option value="Ապարան">Ապարան</option>
-                        <option value="Արարատ">Արարատ</option>
-                        <option value="Արթիկ">Արթիկ</option>
-                        <option value="Արմավիր">Արմավիր</option>
-                        <option value="Արտաշат">Արտաշատ</option>
-                        <option value="Աշտարակ">Աշտարակ</option>
-                        <option value="Բերդ">Բերդ</option>
-                        <option value="Բյուրեղավան">Բյուրեղավան</option>
-                        <option value="Գավառ">Գավառ</option>
-                        <option value="Գյումրի">Գյումրի</option>
-                        <option value="Գորիս">Գորիս</option>
-                        <option value="Դաստակերտ">Դաստակերտ</option>
-                        <option value="Դիլիջան">Դիլիջան</option>
-                        <option value="Եղեգնաձոր">Եղեգնաձոր</option>
-                        <option value="Եղվարդ">Եղվարդ</option>
-                        <option value="Ճամբարակ">Ճամբարակ</option>
-                        <option value="Մարալիկ">Մարալիկ</option>
-                        <option value="Մարտունի">Մարտունի</option>
-                        <option value="Մասիս">Մասիս</option>
-                        <option value="Մեղրի">Մեղրի</option>
-                        <option value="Մեծամոր">Մեծամոր</option>
-                        <option value="Նոր Հաճն">Նոր Հաճն</option>
-                        <option value="Նոյեմբերյան">Նոյեմբերյան</option>
-                        <option value="Շամլուղ">Շամլուղ</option>
-                        <option value="Չարենցավան">Չարենցավան</option>
-                        <option value="Ջերմուկ">Ջերմուկ</option>
-                        <option value="Սիսիան">Սիսիան</option>
-                        <option value="Սպիտակ">Սպիտակ</option>
-                        <option value="Ստեփանավան">Ստեփանավան</option>
-                        <option value="Սևան">Սևան</option>
-                        <option value="Վայք">Վայք</option>
-                        <option value="Վանաձոր">Վանաձոր</option>
-                        <option value="Վարդենիս">Վարդենիս</option>
-                        <option value="Վեդի">Վեդի</option>
-                        <option value="Տաշիր">Տաշիր</option>
-                        <option value="Քաջարան">Քաջարան</option>
-                    </select>
-                </div>
-                <div class="form-field">
-                    <textarea id="businessDescription" placeholder="Նկարագրություն" required></textarea>
-                </div>
-                <div class="form-field">
-                    <label for="businessLogo">Նկար</label>
-                    <input id="businessLogo" type="file" accept="image/*" required>
-                </div>
-                <div class="modal-actions">
-                    <button type="submit" class="btn btn-primary">Ուղարկել հաստատման</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('avelacmanModal')">Փակել</button>
-                </div>
-            </form>
-        </div>
-    </div>
-    <div id="adminModal" class="modal" aria-hidden="true">
-        <div class="modal-body">
-            <button class="modal-close" type="button" aria-label="Փակել" onclick="closeModal('adminModal')">✕</button>
-            <h3>Ադմին մուտք</h3>
-            <div class="form-field">
-                <input id="adminPassword" type="password" placeholder="Գաղտնաբառ" aria-label="Ադմին գաղտնաբառ">
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="btn btn-primary" onclick="authenticateAdmin()">Մուտք</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal('adminModal')">Փակել</button>
-            </div>
-        </div>
-    </div>
-    <div id="detailsModal" class="modal" aria-hidden="true">
-        <div class="modal-body" id="detailsContent"></div>
-    </div>
-    <div class="chat-widget">
-        <button type="button" class="chat-toggle" onclick="toggleChat()" aria-label="Բացեք աջակցությունը">💬</button>
-        <div id="chatBox" class="chat-box" aria-hidden="true">
-            <div class="chat-header">HayShop Օգնական</div>
-            <div class="chat-body" id="chatMessages">
-                <div class="chat-message bot"><strong>Բոտ:</strong> Ողջույն! Երջանիկ եմ օգնելու ձեզ։</div>
-            </div>
-            <div class="chat-footer">
-                <input id="chatInput" type="text" placeholder="Գրեք հայատառ..." aria-label="Ստացեք օգնականի պատասխան">
-                <button type="button" onclick="sendChat()" aria-label="Ուղարկել">➡️</button>
-            </div>
-        </div>
-    </div>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
-    <script>
-        const contactEmail = 'hayshop333@gmail.com';
-        const adminSecret = '123456789';
-        const firebaseConfig = {
-            apiKey: "AIzaSyAXH7T_obCBUuG4zXhY0qpwwBfb3JgMOrI",
-            authDomain: "hayshop-b54ab.firebaseapp.com",
-            projectId: "hayshop-b54ab",
-            storageBucket: "hayshop-b54ab.appspot.com",
-            messagingSenderId: "342283633284",
-            appId: "1:342283633284:web:7e2def7ad150124636f8d1",
-            measurementId: "G-XD8XZ00NJ5",
-            databaseURL: "https://hayshop-b54ab-default-rtdb.firebaseio.com/"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const xanutnerRef = db.ref('xanutner');
-        let listings = [];
-        let isAdmin = false;
-        const loadingElement = document.getElementById('loading');
-        const listingGrid = document.getElementById('listingGrid');
-        const searchInput = document.getElementById('searchInput');
-        const citySelect = document.getElementById('citySelect');
+# Code Citations
 
-        function openModal(id) {
-            const modal = document.getElementById(id);
-            if (!modal) return;
-            modal.classList.add('active');
-            modal.setAttribute('aria-hidden', 'false');
-        }
-        function closeModal(id) {
-            const modal = document.getElementById(id);
-            if (!modal) return;
-            modal.classList.remove('active');
-            modal.setAttribute('aria-hidden', 'true');
-        }
-        function closeAllModals() {
-            document.querySelectorAll('.modal.active').forEach(modal => {
-                modal.classList.remove('active');
-                modal.setAttribute('aria-hidden', 'true');
-            });
-        }
-        function resetFilters() {
-            searchInput.value = '';
-            citySelect.value = '';
-            updateListings();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-        function filterByKeyword(keyword) {
-            searchInput.value = keyword;
-            updateListings();
-            document.getElementById('searchInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        function authenticateAdmin() {
-            const value = document.getElementById('adminPassword').value;
-            if (value === adminSecret) {
-                isAdmin = true;
-                closeModal('adminModal');
-                updateListings();
-                alert('Ադմին մուտքը հաջողվեց։');
-            } else {
-                alert('Սխալ գաղտնաբառ։');
-            }
-        }
-        xanutnerRef.on('value', snapshot => {
-            const data = snapshot.val();
-            listings = data ? Object.keys(data).map(key => ({ fbKey: key, ...data[key] })) : [];
-            loadingElement.style.display = 'none';
-            updateListings();
-        });
-        document.getElementById('avelacmanForm').addEventListener('submit', async event => {
-            event.preventDefault();
-            
-            // Get form elements
-            const form = event.target;
-            const button = form.querySelector('button[type="submit"]');
-            const logoInput = document.getElementById('businessLogo');
-            const nameInput = document.getElementById('businessName');
-            const cityInput = document.getElementById('businessCity');
-            const descriptionInput = document.getElementById('businessDescription');
-            
-            // Get values
-            const logoFile = logoInput.files[0];
-            const name = nameInput.value.trim();
-            const city = cityInput.value;
-            const description = descriptionInput.value.trim();
-            
-            // Validation
-            const errors = [];
-            if (!name) errors.push('Անվանումը պարտադիր է');
-            if (!city) errors.push('Քաղաքի ընտրությունը պարտադիր է');
-            if (!description) errors.push('Նկարագրությունը պարտադիր է');
-            if (!logoFile) errors.push('Նկարի ընտրությունը պարտադիր է');
-            else if (!logoFile.type.startsWith('image/')) errors.push('Նկարը պետք է լինի պատկերի ֆայլ');
-            else if (logoFile.size > 5 * 1024 * 1024) errors.push('Նկարը չպետք է գերազանցի 5MB');
-            
-            if (errors.length > 0) {
-                alert('Խնդրում ենք ուղղել հետևյալ սխալները:\n' + errors.join('\n'));
-                return;
-            }
-            
-            // Disable form and show loading
-            button.disabled = true;
-            button.textContent = 'Բեռնվում է...';
-            form.style.opacity = '0.7';
-            form.style.pointerEvents = 'none';
-            
-            try {
-                // Check Firebase connection
-                if (!firebase.apps.length) {
-                    throw new Error('Firebase-ը չի կարգավորվել');
-                }
-                
-                // Upload image to Firebase Storage
-                const storageRef = firebase.storage().ref().child('logos/' + Date.now() + '_' + logoFile.name.replace(/[^a-zA-Z0-9.-]/g, '_'));
-                const uploadTask = await storageRef.put(logoFile);
-                const downloadUrl = await uploadTask.ref.getDownloadURL();
-                
-                // Save data to Firebase Realtime Database
-                const newItem = {
-                    anun: name,
-                    kaxaq: city,
-                    nkaragir: description,
-                    logo: downloadUrl,
-                    video: null,
-                    hastatvac: false,
-                    createdAt: firebase.database.ServerValue.TIMESTAMP
-                };
-                
-                await xanutnerRef.push(newItem);
-                
-                // Success
-                alert('Հայտարարությունը հաջողությամբ ուղարկվեց հաստատման։');
-                form.reset();
-                closeModal('avelacmanModal');
-                
-            } catch (error) {
-                console.error('Սխալ հայտարարություն ավելացնելիս:', error);
-                
-                let errorMessage = 'Անհայտ սխալ տեղի ունեցավ։';
-                if (error.code === 'storage/unauthorized') {
-                    errorMessage = 'Նկարի բեռնումը չի թույլատրվում։ Ստուգեք Firebase Storage կանոնները։';
-                } else if (error.code === 'permission-denied') {
-                    errorMessage = 'Գրավորելու թույլտվությունը մերժված է։ Ստուգեք Firebase Database կանոնները։';
-                } else if (error.message) {
-                    errorMessage = error.message;
-                }
-                
-                alert('Սխալ: ' + errorMessage + '\n\nԽնդրում ենք կապվել աջակցության հետ՝ ' + contactEmail);
-                
-            } finally {
-                // Re-enable form
-                button.disabled = false;
-                button.textContent = 'Ուղարկել հաստատման';
-                form.style.opacity = '';
-                form.style.pointerEvents = '';
-            }
-        });
-        function updateListings() {
-            listingGrid.innerHTML = '';
-            const query = searchInput.value.toLowerCase().trim();
-            const selectedCity = citySelect.value;
-            const visibleItems = listings.filter(item => {
-                if (!isAdmin && !item.hastatvac) return false;
-                if (selectedCity && item.kaxaq !== selectedCity) return false;
-                if (!query) return true;
-                const nameMatch = item.anun.toLowerCase().includes(query);
-                const descriptionMatch = item.nkaragir?.toLowerCase().includes(query);
-                return nameMatch || descriptionMatch;
-            });
-            if (!visibleItems.length) {
-                listingGrid.innerHTML = '<div class="empty-state">Ոչ մի հայտարարություն չի գտնվել։ Փորձեք ուրիշ սյուն կամ քաղաք։</div>';
-                return;
-            }
-            visibleItems.forEach(item => {
-                const card = document.createElement('article');
-                card.className = 'qart';
-                card.innerHTML = `
-                    <img loading="lazy" decoding="async" src="${item.logo}" alt="${item.anun}">
-                    <div class="qart-content">
-                        <h3>${item.anun}</h3>
-                        <p>📍 ${item.kaxaq}</p>
-                        <div class="actions">
-                            <button type="button" class="btn btn-primary" onclick="showDetails('${item.fbKey}')">Տեսնել ավելին</button>
-                            ${isAdmin ? `<button type="button" class="btn btn-secondary" onclick="approveItem('${item.fbKey}')">Հաստատել</button>
-                            <button type="button" class="btn btn-alert" onclick="deleteItem('${item.fbKey}')">Ջնջել</button>` : ''}
-                        </div>
-                    </div>
-                `;
-                listingGrid.appendChild(card);
-            });
-        }
-        function showDetails(key) {
-            const item = listings.find(x => x.fbKey === key);
-            if (!item) return;
-            document.getElementById('detailsContent').innerHTML = `
-                <button class="modal-close" type="button" aria-label="Փակել" onclick="closeModal('detailsModal')">✕</button>
-                <h3>${item.anun}</h3>
-                <p>${item.nkaragir || 'Նկարագրություն չկա։'}</p>
-                <img loading="lazy" decoding="async" src="${item.logo}" alt="${item.anun}" style="border-radius: 18px; margin-top: 18px;">
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('detailsModal')">Փակել</button>
-                </div>
-            `;
-            openModal('detailsModal');
-        }
-        function approveItem(key) { xanutnerRef.child(key).update({ hastatvac: true }); }
-        function deleteItem(key) {
-            if (confirm('Ջնջե՞լ այս հայտարարությունը։')) {
-                xanutnerRef.child(key).remove();
-            }
-        }
-        function toggleChat() {
-            const box = document.getElementById('chatBox');
-            const isOpen = box.classList.toggle('active');
-            box.setAttribute('aria-hidden', String(!isOpen));
-        }
-        function sendChat() {
-            const input = document.getElementById('chatInput');
-            const value = input.value.trim();
-            if (!value) return;
-            const messages = document.getElementById('chatMessages');
-            if (!/^[ա-ֆԱ-Ֆ0-9\s.,?!։՝«»()]+$/.test(value)) {
-                messages.insertAdjacentHTML('beforeend', '<div class="chat-message bot"><strong>⚠️ Բոտ:</strong> Խնդրում ենք գրել միայն հայատառ։</div>');
-                input.value = '';
-                messages.scrollTop = messages.scrollHeight;
-                return;
-            }
-            messages.insertAdjacentHTML('beforeend', `<div class="chat-message user">${value}</div>`);
-            input.value = '';
-            messages.scrollTop = messages.scrollHeight;
-            const lower = value.toLowerCase();
-            let response = 'Ներողություն, չհասկացա հարցը։ Գրեք պարզ կամ ուղարկեք էլ. փոստով՝ ' + contactEmail + '.';
-            if (lower.includes('բիզնես') || lower.includes('գրանց')) {
-                response = 'Բիզնեսի գրանցման հարցերի համար գրեք՝ ' + contactEmail + '.';
-            } else if (lower.includes('գովազդ') || lower.includes('vip')) {
-                response = 'Գովազդի պայմանների համար գրեք՝ ' + contactEmail + '.';
-            } else if (lower.includes('ավել') || lower.includes('տեղադր')) {
-                response = 'Սեղմեք «Ավելացնել հայտարարություն» և լրացրեք բոլոր դաշտերը։';
-            } else if (lower.includes('ջնջ') || lower.includes('հեռաց')) {
-                response = 'Այս պահին հայտը ջնջելու համար գրեք մեզ՝ ' + contactEmail + '.';
-            } else if (lower.includes('բարև') || lower.includes('ողջույն')) {
-                response = 'Բարև, ինչով կարող ենք օգնել ձեզ այսօր։';
-            }
-            setTimeout(() => {
-                messages.insertAdjacentHTML('beforeend', `<div class="chat-message bot"><strong>Բոտ:</strong> ${response}</div>`);
-                messages.scrollTop = messages.scrollHeight;
-            }, 450);
-        }
-        document.addEventListener('DOMContentLoaded', () => {
-            searchInput.addEventListener('input', updateListings);
-            citySelect.addEventListener('change', updateListings);
-            document.querySelectorAll('.modal').forEach(modal => {
-                modal.addEventListener('click', event => {
-                    if (event.target === modal) closeModal(modal.id);
-                });
-            });
-            document.addEventListener('keydown', event => {
-                if (event.key === 'Escape') closeAllModals();
-            });
-        });
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').catch(() => {});
-            });
-        }
-    </script>
-</body>
-</html>
+## License: unknown
+https://github.com/Angel-mae-cuison/AngelMae/blob/af861dd7f7b11b64c63caa7b34439f84dcf94d6d/firebase.html
+
+```
+✅ **Firebase կոդերը ջնջվել են:** 
+
+Բոլոր Firebase SDK scripts և կոդերը հեռացվել են ֆայլից։ Այժմ կայքը լռուցյալ վիճակում է, որպեսզի կարգավորեք Firebase քայլ առ քայլ:
+
+**Հաջորդ քայլերը:**
+
+1. **Բացեք** [https://console.firebase.google.com](https://console.firebase.google.com)
+2. **Ստեղծեք նոր Firebase նախագիծ** կամ ստացեք ձեր Firebase configuration
+3. **Կապեք Realtime Database** և **Storage**
+4. **Սահմանեք Security Rules** ճիշտ
+5. **Վերցրեք Firebase Config** (apiKey, projectId, եւ այլն)
+6. **Կատարեք այս փոփոխությունները** [index.html](index.html)-ում `<head>` բաժնի վերջում:
+
+```html
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID",
+        databaseURL: "YOUR_DATABASE_URL"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const
+```
+
+
+## License: unknown
+https://github.com/Angel-mae-cuison/AngelMae/blob/af861dd7f7b11b64c63caa7b34439f84dcf94d6d/firebase.html
+
+```
+✅ **Firebase կոդերը ջնջվել են:** 
+
+Բոլոր Firebase SDK scripts և կոդերը հեռացվել են ֆայլից։ Այժմ կայքը լռուցյալ վիճակում է, որպեսզի կարգավորեք Firebase քայլ առ քայլ:
+
+**Հաջորդ քայլերը:**
+
+1. **Բացեք** [https://console.firebase.google.com](https://console.firebase.google.com)
+2. **Ստեղծեք նոր Firebase նախագիծ** կամ ստացեք ձեր Firebase configuration
+3. **Կապեք Realtime Database** և **Storage**
+4. **Սահմանեք Security Rules** ճիշտ
+5. **Վերցրեք Firebase Config** (apiKey, projectId, եւ այլն)
+6. **Կատարեք այս փոփոխությունները** [index.html](index.html)-ում `<head>` բաժնի վերջում:
+
+```html
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID",
+        databaseURL: "YOUR_DATABASE_URL"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const
+```
+
+
+## License: unknown
+https://github.com/Pranav-A-04/Finance-Tracker/blob/226cdea27fd2a32e96105b4397a421440613113f/fllogin.html
+
+```
+✅ **Firebase կոդերը ջնջվել են:** 
+
+Բոլոր Firebase SDK scripts և կոդերը հեռացվել են ֆայլից։ Այժմ կայքը լռուցյալ վիճակում է, որպեսզի կարգավորեք Firebase քայլ առ քայլ:
+
+**Հաջորդ քայլերը:**
+
+1. **Բացեք** [https://console.firebase.google.com](https://console.firebase.google.com)
+2. **Ստեղծեք նոր Firebase նախագիծ** կամ ստացեք ձեր Firebase configuration
+3. **Կապեք Realtime Database** և **Storage**
+4. **Սահմանեք Security Rules** ճիշտ
+5. **Վերցրեք Firebase Config** (apiKey, projectId, եւ այլն)
+6. **Կատարեք այս փոփոխությունները** [index.html](index.html)-ում `<head>` բաժնի վերջում:
+
+```html
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID",
+        databaseURL: "YOUR_DATABASE_URL"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const xanut
+```
+
+
+## License: unknown
+https://github.com/Angel-mae-cuison/AngelMae/blob/af861dd7f7b11b64c63caa7b34439f84dcf94d6d/firebase.html
+
+```
+✅ **Firebase կոդերը ջնջվել են:** 
+
+Բոլոր Firebase SDK scripts և կոդերը հեռացվել են ֆայլից։ Այժմ կայքը լռուցյալ վիճակում է, որպեսզի կարգավորեք Firebase քայլ առ քայլ:
+
+**Հաջորդ քայլերը:**
+
+1. **Բացեք** [https://console.firebase.google.com](https://console.firebase.google.com)
+2. **Ստեղծեք նոր Firebase նախագիծ** կամ ստացեք ձեր Firebase configuration
+3. **Կապեք Realtime Database** և **Storage**
+4. **Սահմանեք Security Rules** ճիշտ
+5. **Վերցրեք Firebase Config** (apiKey, projectId, եւ այլն)
+6. **Կատարեք այս փոփոխությունները** [index.html](index.html)-ում `<head>` բաժնի վերջում:
+
+```html
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID",
+        databaseURL: "YOUR_DATABASE_URL"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const
+```
+
+
+## License: unknown
+https://github.com/Pranav-A-04/Finance-Tracker/blob/226cdea27fd2a32e96105b4397a421440613113f/fllogin.html
+
+```
+✅ **Firebase կոդերը ջնջվել են:** 
+
+Բոլոր Firebase SDK scripts և կոդերը հեռացվել են ֆայլից։ Այժմ կայքը լռուցյալ վիճակում է, որպեսզի կարգավորեք Firebase քայլ առ քայլ:
+
+**Հաջորդ քայլերը:**
+
+1. **Բացեք** [https://console.firebase.google.com](https://console.firebase.google.com)
+2. **Ստեղծեք նոր Firebase նախագիծ** կամ ստացեք ձեր Firebase configuration
+3. **Կապեք Realtime Database** և **Storage**
+4. **Սահմանեք Security Rules** ճիշտ
+5. **Վերցրեք Firebase Config** (apiKey, projectId, եւ այլն)
+6. **Կատարեք այս փոփոխությունները** [index.html](index.html)-ում `<head>` բաժնի վերջում:
+
+```html
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID",
+        databaseURL: "YOUR_DATABASE_URL"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const xanut
+```
+
+
+## License: unknown
+https://github.com/Soufianeelbiki/FaceRecognition/blob/d2de47bbec2986bd0f067f70877d5de40bfab75c/index.html
+
+```
+✅ **Firebase կոդերը ջնջվել են:** 
+
+Բոլոր Firebase SDK scripts և կոդերը հեռացվել են ֆայլից։ Այժմ կայքը լռուցյալ վիճակում է, որպեսզի կարգավորեք Firebase քայլ առ քայլ:
+
+**Հաջորդ քայլերը:**
+
+1. **Բացեք** [https://console.firebase.google.com](https://console.firebase.google.com)
+2. **Ստեղծեք նոր Firebase նախագիծ** կամ ստացեք ձեր Firebase configuration
+3. **Կապեք Realtime Database** և **Storage**
+4. **Սահմանեք Security Rules** ճիշտ
+5. **Վերցրեք Firebase Config** (apiKey, projectId, եւ այլն)
+6. **Կատարեք այս փոփոխությունները** [index.html](index.html)-ում `<head>` բաժնի վերջում:
+
+```html
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID",
+        databaseURL: "YOUR_DATABASE_URL"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const xanutnerRef = db.ref('xanutner');
+    
+```
+
+
+## License: unknown
+https://github.com/Pranav-A-04/Pet-Tracker/blob/fa6ef5d3dd19c38a80b487a9b9fb9fabadac64ba/ngohome/index4.html
+
+```
+✅ **Firebase կոդերը ջնջվել են:** 
+
+Բոլոր Firebase SDK scripts և կոդերը հեռացվել են ֆայլից։ Այժմ կայքը լռուցյալ վիճակում է, որպեսզի կարգավորեք Firebase քայլ առ քայլ:
+
+**Հաջորդ քայլերը:**
+
+1. **Բացեք** [https://console.firebase.google.com](https://console.firebase.google.com)
+2. **Ստեղծեք նոր Firebase նախագիծ** կամ ստացեք ձեր Firebase configuration
+3. **Կապեք Realtime Database** և **Storage**
+4. **Սահմանեք Security Rules** ճիշտ
+5. **Վերցրեք Firebase Config** (apiKey, projectId, եւ այլն)
+6. **Կատարեք այս փոփոխությունները** [index.html](index.html)-ում `<head>` բաժնի վերջում:
+
+```html
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID",
+        databaseURL: "YOUR_DATABASE_URL"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const xanutnerRef = db.ref('xanutner');
+    
+    // Ուղղ
+```
+
+
+## License: unknown
+https://github.com/Angel-mae-cuison/AngelMae/blob/af861dd7f7b11b64c63caa7b34439f84dcf94d6d/firebase.html
+
+```
+✅ **Firebase կոդերը ջնջվել են:** 
+
+Բոլոր Firebase SDK scripts և կոդերը հեռացվել են ֆայլից։ Այժմ կայքը լռուցյալ վիճակում է, որպեսզի կարգավորեք Firebase քայլ առ քայլ:
+
+**Հաջորդ քայլերը:**
+
+1. **Բացեք** [https://console.firebase.google.com](https://console.firebase.google.com)
+2. **Ստեղծեք նոր Firebase նախագիծ** կամ ստացեք ձեր Firebase configuration
+3. **Կապեք Realtime Database** և **Storage**
+4. **Սահմանեք Security Rules** ճիշտ
+5. **Վերցրեք Firebase Config** (apiKey, projectId, եւ այլն)
+6. **Կատարեք այս փոփոխությունները** [index.html](index.html)-ում `<head>` բաժնի վերջում:
+
+```html
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID",
+        databaseURL: "YOUR_DATABASE_URL"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const
+```
+
+
+## License: unknown
+https://github.com/Pranav-A-04/Finance-Tracker/blob/226cdea27fd2a32e96105b4397a421440613113f/fllogin.html
+
+```
+✅ **Firebase կոդերը ջնջվել են:** 
+
+Բոլոր Firebase SDK scripts և կոդերը հեռացվել են ֆայլից։ Այժմ կայքը լռուցյալ վիճակում է, որպեսզի կարգավորեք Firebase քայլ առ քայլ:
+
+**Հաջորդ քայլերը:**
+
+1. **Բացեք** [https://console.firebase.google.com](https://console.firebase.google.com)
+2. **Ստեղծեք նոր Firebase նախագիծ** կամ ստացեք ձեր Firebase configuration
+3. **Կապեք Realtime Database** և **Storage**
+4. **Սահմանեք Security Rules** ճիշտ
+5. **Վերցրեք Firebase Config** (apiKey, projectId, եւ այլն)
+6. **Կատարեք այս փոփոխությունները** [index.html](index.html)-ում `<head>` բաժնի վերջում:
+
+```html
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID",
+        databaseURL: "YOUR_DATABASE_URL"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const xanut
+```
+
+
+## License: unknown
+https://github.com/Soufianeelbiki/FaceRecognition/blob/d2de47bbec2986bd0f067f70877d5de40bfab75c/index.html
+
+```
+✅ **Firebase կոդերը ջնջվել են:** 
+
+Բոլոր Firebase SDK scripts և կոդերը հեռացվել են ֆայլից։ Այժմ կայքը լռուցյալ վիճակում է, որպեսզի կարգավորեք Firebase քայլ առ քայլ:
+
+**Հաջորդ քայլերը:**
+
+1. **Բացեք** [https://console.firebase.google.com](https://console.firebase.google.com)
+2. **Ստեղծեք նոր Firebase նախագիծ** կամ ստացեք ձեր Firebase configuration
+3. **Կապեք Realtime Database** և **Storage**
+4. **Սահմանեք Security Rules** ճիշտ
+5. **Վերցրեք Firebase Config** (apiKey, projectId, եւ այլն)
+6. **Կատարեք այս փոփոխությունները** [index.html](index.html)-ում `<head>` բաժնի վերջում:
+
+```html
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID",
+        databaseURL: "YOUR_DATABASE_URL"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const xanutnerRef = db.ref('xanutner');
+    
+```
+
+
+## License: unknown
+https://github.com/Pranav-A-04/Pet-Tracker/blob/fa6ef5d3dd19c38a80b487a9b9fb9fabadac64ba/ngohome/index4.html
+
+```
+✅ **Firebase կոդերը ջնջվել են:** 
+
+Բոլոր Firebase SDK scripts և կոդերը հեռացվել են ֆայլից։ Այժմ կայքը լռուցյալ վիճակում է, որպեսզի կարգավորեք Firebase քայլ առ քայլ:
+
+**Հաջորդ քայլերը:**
+
+1. **Բացեք** [https://console.firebase.google.com](https://console.firebase.google.com)
+2. **Ստեղծեք նոր Firebase նախագիծ** կամ ստացեք ձեր Firebase configuration
+3. **Կապեք Realtime Database** և **Storage**
+4. **Սահմանեք Security Rules** ճիշտ
+5. **Վերցրեք Firebase Config** (apiKey, projectId, եւ այլն)
+6. **Կատարեք այս փոփոխությունները** [index.html](index.html)-ում `<head>` բաժնի վերջում:
+
+```html
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID",
+        databaseURL: "YOUR_DATABASE_URL"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const xanutnerRef = db.ref('xanutner');
+    
+    // Ուղղ
+```
+
+
+## License: unknown
+https://github.com/Angel-mae-cuison/AngelMae/blob/af861dd7f7b11b64c63caa7b34439f84dcf94d6d/firebase.html
+
+```
+✅ **Firebase կոդերը ջնջվել են:** 
+
+Բոլոր Firebase SDK scripts և կոդերը հեռացվել են ֆայլից։ Այժմ կայքը լռուցյալ վիճակում է, որպեսզի կարգավորեք Firebase քայլ առ քայլ:
+
+**Հաջորդ քայլերը:**
+
+1. **Բացեք** [https://console.firebase.google.com](https://console.firebase.google.com)
+2. **Ստեղծեք նոր Firebase նախագիծ** կամ ստացեք ձեր Firebase configuration
+3. **Կապեք Realtime Database** և **Storage**
+4. **Սահմանեք Security Rules** ճիշտ
+5. **Վերցրեք Firebase Config** (apiKey, projectId, եւ այլն)
+6. **Կատարեք այս փոփոխությունները** [index.html](index.html)-ում `<head>` բաժնի վերջում:
+
+```html
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID",
+        databaseURL: "YOUR_DATABASE_URL"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const xanutnerRef = db.ref('xanutner');
+    
+    // Ուղղ
+```
+
+
+## License: unknown
+https://github.com/Soufianeelbiki/FaceRecognition/blob/d2de47bbec2986bd0f067f70877d5de40bfab75c/index.html
+
+```
+✅ **Firebase կոդերը ջնջվել են:** 
+
+Բոլոր Firebase SDK scripts և կոդերը հեռացվել են ֆայլից։ Այժմ կայքը լռուցյալ վիճակում է, որպեսզի կարգավորեք Firebase քայլ առ քայլ:
+
+**Հաջորդ քայլերը:**
+
+1. **Բացեք** [https://console.firebase.google.com](https://console.firebase.google.com)
+2. **Ստեղծեք նոր Firebase նախագիծ** կամ ստացեք ձեր Firebase configuration
+3. **Կապեք Realtime Database** և **Storage**
+4. **Սահմանեք Security Rules** ճիշտ
+5. **Վերցրեք Firebase Config** (apiKey, projectId, եւ այլն)
+6. **Կատարեք այս փոփոխությունները** [index.html](index.html)-ում `<head>` բաժնի վերջում:
+
+```html
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID",
+        databaseURL: "YOUR_DATABASE_URL"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const xanutnerRef = db.ref('xanutner');
+    
+    // Ուղղ
+```
+
+
+## License: unknown
+https://github.com/Pranav-A-04/Finance-Tracker/blob/226cdea27fd2a32e96105b4397a421440613113f/fllogin.html
+
+```
+✅ **Firebase կոդերը ջնջվել են:** 
+
+Բոլոր Firebase SDK scripts և կոդերը հեռացվել են ֆայլից։ Այժմ կայքը լռուցյալ վիճակում է, որպեսզի կարգավորեք Firebase քայլ առ քայլ:
+
+**Հաջորդ քայլերը:**
+
+1. **Բացեք** [https://console.firebase.google.com](https://console.firebase.google.com)
+2. **Ստեղծեք նոր Firebase նախագիծ** կամ ստացեք ձեր Firebase configuration
+3. **Կապեք Realtime Database** և **Storage**
+4. **Սահմանեք Security Rules** ճիշտ
+5. **Վերցրեք Firebase Config** (apiKey, projectId, եւ այլն)
+6. **Կատարեք այս փոփոխությունները** [index.html](index.html)-ում `<head>` բաժնի վերջում:
+
+```html
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID",
+        databaseURL: "YOUR_DATABASE_URL"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const xanutnerRef = db.ref('xanutner');
+    
+    // Ուղղ
+```
+
+
+## License: unknown
+https://github.com/Pranav-A-04/Pet-Tracker/blob/fa6ef5d3dd19c38a80b487a9b9fb9fabadac64ba/ngohome/index4.html
+
+```
+✅ **Firebase կոդերը ջնջվել են:** 
+
+Բոլոր Firebase SDK scripts և կոդերը հեռացվել են ֆայլից։ Այժմ կայքը լռուցյալ վիճակում է, որպեսզի կարգավորեք Firebase քայլ առ քայլ:
+
+**Հաջորդ քայլերը:**
+
+1. **Բացեք** [https://console.firebase.google.com](https://console.firebase.google.com)
+2. **Ստեղծեք նոր Firebase նախագիծ** կամ ստացեք ձեր Firebase configuration
+3. **Կապեք Realtime Database** և **Storage**
+4. **Սահմանեք Security Rules** ճիշտ
+5. **Վերցրեք Firebase Config** (apiKey, projectId, եւ այլն)
+6. **Կատարեք այս փոփոխությունները** [index.html](index.html)-ում `<head>` բաժնի վերջում:
+
+```html
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script>
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID",
+        databaseURL: "YOUR_DATABASE_URL"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const xanutnerRef = db.ref('xanutner');
+    
+    // Ուղղ
+```
+
