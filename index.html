@@ -624,38 +624,90 @@
         });
         document.getElementById('avelacmanForm').addEventListener('submit', async event => {
             event.preventDefault();
-            const button = event.target.querySelector('button[type="submit"]');
-            const logoFile = document.getElementById('businessLogo').files[0];
-            const name = document.getElementById('businessName').value.trim();
-            const city = document.getElementById('businessCity').value;
-            const description = document.getElementById('businessDescription').value.trim();
-            if (!logoFile || !name || !city || !description) {
-                alert('Խնդրում ենք լրացնել բոլոր դաշտերը։');
+            
+            // Get form elements
+            const form = event.target;
+            const button = form.querySelector('button[type="submit"]');
+            const logoInput = document.getElementById('businessLogo');
+            const nameInput = document.getElementById('businessName');
+            const cityInput = document.getElementById('businessCity');
+            const descriptionInput = document.getElementById('businessDescription');
+            
+            // Get values
+            const logoFile = logoInput.files[0];
+            const name = nameInput.value.trim();
+            const city = cityInput.value;
+            const description = descriptionInput.value.trim();
+            
+            // Validation
+            const errors = [];
+            if (!name) errors.push('Անվանումը պարտադիր է');
+            if (!city) errors.push('Քաղաքի ընտրությունը պարտադիր է');
+            if (!description) errors.push('Նկարագրությունը պարտադիր է');
+            if (!logoFile) errors.push('Նկարի ընտրությունը պարտադիր է');
+            else if (!logoFile.type.startsWith('image/')) errors.push('Նկարը պետք է լինի պատկերի ֆայլ');
+            else if (logoFile.size > 5 * 1024 * 1024) errors.push('Նկարը չպետք է գերազանցի 5MB');
+            
+            if (errors.length > 0) {
+                alert('Խնդրում ենք ուղղել հետևյալ սխալները:\n' + errors.join('\n'));
                 return;
             }
+            
+            // Disable form and show loading
             button.disabled = true;
             button.textContent = 'Բեռնվում է...';
+            form.style.opacity = '0.7';
+            form.style.pointerEvents = 'none';
+            
             try {
-                const storageRef = firebase.storage().ref().child('logos/' + Date.now() + '_' + logoFile.name);
+                // Check Firebase connection
+                if (!firebase.apps.length) {
+                    throw new Error('Firebase-ը չի կարգավորվել');
+                }
+                
+                // Upload image to Firebase Storage
+                const storageRef = firebase.storage().ref().child('logos/' + Date.now() + '_' + logoFile.name.replace(/[^a-zA-Z0-9.-]/g, '_'));
                 const uploadTask = await storageRef.put(logoFile);
                 const downloadUrl = await uploadTask.ref.getDownloadURL();
-                await xanutnerRef.push({
+                
+                // Save data to Firebase Realtime Database
+                const newItem = {
                     anun: name,
                     kaxaq: city,
                     nkaragir: description,
                     logo: downloadUrl,
                     video: null,
-                    hastatvac: false
-                });
-                event.target.reset();
+                    hastatvac: false,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                };
+                
+                await xanutnerRef.push(newItem);
+                
+                // Success
+                alert('Հայտարարությունը հաջողությամբ ուղարկվեց հաստատման։');
+                form.reset();
                 closeModal('avelacmanModal');
-                alert('Հայտարարությունը ուղարկվեց հաստատման։');
+                
             } catch (error) {
-                console.error(error);
-                alert('Սխալ ներբեռնելու ընթացքում. Ստուգեք Կայքի կոնֆիգուրացիան։');
+                console.error('Սխալ հայտարարություն ավելացնելիս:', error);
+                
+                let errorMessage = 'Անհայտ սխալ տեղի ունեցավ։';
+                if (error.code === 'storage/unauthorized') {
+                    errorMessage = 'Նկարի բեռնումը չի թույլատրվում։ Ստուգեք Firebase Storage կանոնները։';
+                } else if (error.code === 'permission-denied') {
+                    errorMessage = 'Գրավորելու թույլտվությունը մերժված է։ Ստուգեք Firebase Database կանոնները։';
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
+                
+                alert('Սխալ: ' + errorMessage + '\n\nԽնդրում ենք կապվել աջակցության հետ՝ ' + contactEmail);
+                
             } finally {
+                // Re-enable form
                 button.disabled = false;
                 button.textContent = 'Ուղարկել հաստատման';
+                form.style.opacity = '';
+                form.style.pointerEvents = '';
             }
         });
         function updateListings() {
@@ -769,4 +821,3 @@
     </script>
 </body>
 </html>
-s
