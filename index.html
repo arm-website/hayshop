@@ -349,6 +349,34 @@
             border: none;
             cursor: pointer;
         }
+        .admin-dashboard {
+            margin-top: 18px;
+        }
+        .admin-dashboard h4 {
+            margin: 0 0 14px;
+            font-size: 1.1rem;
+            color: var(--surface-soft);
+        }
+        .admin-pending-list {
+            display: grid;
+            gap: 14px;
+            max-height: 320px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .admin-pending-card {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 14px;
+        }
+        .admin-pending-card p {
+            margin: 0 0 10px;
+            color: var(--text-secondary);
+        }
+        .hidden {
+            display: none !important;
+        }
         .empty-state {
             grid-column: 1 / -1;
             text-align: center;
@@ -524,13 +552,22 @@
     <div id="adminModal" class="modal" aria-hidden="true">
         <div class="modal-body">
             <button class="modal-close" type="button" aria-label="Փակել" onclick="closeModal('adminModal')">✕</button>
-            <h3>Ադմին մուտք</h3>
-            <div class="form-field">
-                <input id="adminPassword" type="password" placeholder="Գաղտնաբառ" aria-label="Ադմին գաղտնաբառ">
+            <h3>Ադմին</h3>
+            <div id="adminLogin">
+                <div class="form-field">
+                    <input id="adminPassword" type="password" placeholder="Գաղտնաբառ" aria-label="Ադմին գաղտնաբառ">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-primary" onclick="authenticateAdmin()">Մուտք</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('adminModal')">Փակել</button>
+                </div>
             </div>
-            <div class="modal-actions">
-                <button type="button" class="btn btn-primary" onclick="authenticateAdmin()">Մուտք</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal('adminModal')">Փակել</button>
+            <div id="adminDashboard" class="admin-dashboard hidden">
+                <h4>Սպասման տակ գտնվող հայտարարություններ</h4>
+                <div id="adminPendingList" class="admin-pending-list"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('adminModal')">Փակել</button>
+                </div>
             </div>
         </div>
     </div>
@@ -711,11 +748,88 @@
             }
         }
 
+        async function loadPendingAdmin() {
+            const pendingList = document.getElementById('adminPendingList');
+            if (!pendingList) return;
+            pendingList.innerHTML = '<div class="empty-state">Բեռնվում է...</div>';
+
+            try {
+                const data = await supabaseRequest('advertisements', {
+                    params: 'select=*,created_at&approved=eq.false&order=created_at.desc'
+                });
+                const items = Array.isArray(data) ? data.map(normalizeListing) : [];
+                renderPendingAdmin(items);
+            } catch (error) {
+                console.error('Load pending admin failed:', error);
+                pendingList.innerHTML = '<div class="empty-state">Սխալ տեղի ունեցավ սպասման տակ գտնվող հայտարարությունները բեռնելիս։</div>';
+            }
+        }
+
+        function renderPendingAdmin(items) {
+            const pendingList = document.getElementById('adminPendingList');
+            if (!pendingList) return;
+
+            pendingList.innerHTML = '';
+            if (!items.length) {
+                pendingList.innerHTML = '<div class="empty-state">Ոչ մի հայտ չի սպասում հաստատմանը։</div>';
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'admin-pending-card';
+
+                const title = document.createElement('p');
+                title.innerHTML = `<strong>${item.name}</strong> — ${item.city}`;
+                card.appendChild(title);
+
+                const description = document.createElement('p');
+                description.textContent = item.description;
+                card.appendChild(description);
+
+                const actions = document.createElement('div');
+                actions.className = 'actions';
+
+                const approveButton = document.createElement('button');
+                approveButton.type = 'button';
+                approveButton.className = 'btn btn-secondary';
+                approveButton.textContent = 'Հաստատել';
+                approveButton.addEventListener('click', () => approveItem(item.id));
+                actions.appendChild(approveButton);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.type = 'button';
+                deleteButton.className = 'btn btn-alert';
+                deleteButton.textContent = 'Ջնջել';
+                deleteButton.addEventListener('click', () => deleteItem(item.id));
+                actions.appendChild(deleteButton);
+
+                card.appendChild(actions);
+                fragment.appendChild(card);
+            });
+
+            pendingList.appendChild(fragment);
+        }
+
         function openModal(id) {
             const modal = document.getElementById(id);
             if (!modal) return;
             modal.classList.add('active');
             modal.setAttribute('aria-hidden', 'false');
+
+            if (id === 'adminModal') {
+                const login = document.getElementById('adminLogin');
+                const dashboard = document.getElementById('adminDashboard');
+                if (isAdmin) {
+                    if (login) login.classList.add('hidden');
+                    if (dashboard) dashboard.classList.remove('hidden');
+                    loadPendingAdmin();
+                } else {
+                    if (login) login.classList.remove('hidden');
+                    if (dashboard) dashboard.classList.add('hidden');
+                }
+            }
         }
 
         function closeModal(id) {
@@ -746,9 +860,14 @@
 
             if (passwordInput.value === adminSecret) {
                 isAdmin = true;
-                closeModal('adminModal');
                 renderListings(getVisibleListings());
                 showMessage('Ադմին մուտքն ընդունված է։');
+
+                const login = document.getElementById('adminLogin');
+                const dashboard = document.getElementById('adminDashboard');
+                if (login) login.classList.add('hidden');
+                if (dashboard) dashboard.classList.remove('hidden');
+                loadPendingAdmin();
             } else {
                 showMessage('Սխալ գաղտնաբառ։');
             }
@@ -831,6 +950,7 @@
                     body: { approved: true }
                 });
                 await loadListings();
+                if (isAdmin) await loadPendingAdmin();
             } catch (error) {
                 console.error('Approve failed:', error);
                 showMessage('Սխալ տեղի ունեցավ հաստատման ժամանակ։');
@@ -845,6 +965,7 @@
                     method: 'DELETE'
                 });
                 await loadListings();
+                if (isAdmin) await loadPendingAdmin();
             } catch (error) {
                 console.error('Delete failed:', error);
                 showMessage('Սխալ տեղի ունեցավ ջնջման ժամանակ։');
