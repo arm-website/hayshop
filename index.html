@@ -1302,8 +1302,8 @@
                     errors.push('Նկարը պարտադիր է։');
                 } else if (!logoFile.type.startsWith('image/')) {
                     errors.push('Ընտրեք պատկերի ֆայլ։');
-                } else if (logoFile.size > 1 * 1024 * 1024) {
-                    errors.push('Նկարը չպետք է գերազանցի 1MB։');
+                } else if (logoFile.size > 2 * 1024 * 1024 * 1024) {
+                    errors.push('Նկարը չպետք է գերազանցի 2GB։');
                 }
 
                 if (errors.length) {
