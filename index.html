@@ -773,7 +773,19 @@
         }
 
         async function supabaseRequest(endpoint, { method = 'GET', body = null, headers = {}, params = '' } = {}) {
-            const url = `${SUPABASE_URL}/${endpoint}${params ? `?${params}` : ''}`;
+            const url = new URL(`${SUPABASE_URL}/${endpoint}`);
+            if (params) {
+                if (typeof params === 'string') {
+                    url.search = params;
+                } else if (typeof params === 'object') {
+                    Object.entries(params).forEach(([key, value]) => {
+                        if (value !== undefined && value !== null) {
+                            url.searchParams.set(key, value);
+                        }
+                    });
+                }
+            }
+
             const requestHeaders = {
                 apikey: SUPABASE_ANON_KEY,
                 Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
@@ -788,7 +800,7 @@
                 requestHeaders.Prefer = 'return=representation';
             }
 
-            const response = await fetch(url, {
+            const response = await fetch(url.toString(), {
                 method,
                 headers: requestHeaders,
                 body: body ? JSON.stringify(body) : null
@@ -1196,41 +1208,47 @@
         }
 
         async function approveItem(id) {
+            const confirmApprove = window.confirm(`Հաստատե՞լ այս հայտարարությունը։\nID: ${id}`);
+            if (!confirmApprove) return;
+
             try {
                 const response = await supabaseRequest('advertisements', {
                     method: 'PATCH',
-                    params: `id=eq.${encodeURIComponent(id)}`,
+                    params: { id: `eq.${id}` },
                     body: { approved: true }
                 });
-                if (response) {
-                    showMessage('Հայտարարությունը հաջողությամբ հաստատվեց։');
-                }
+
+                console.log('Approve response:', response);
+                showMessage('✓ Հայտարարությունը հաջողությամբ հաստատվեց։');
                 if (isAdmin) removePendingCard(id);
                 await loadListings();
                 if (isAdmin) await loadPendingAdmin();
             } catch (error) {
                 console.error('Approve failed:', error);
-                showMessage('Սխալ տեղի ունեցավ հաստատման ժամանակ։');
+                console.error('Error details:', error.response);
+                showMessage(`✗ Հաստատման սխալ: ${error.message}`);
             }
         }
 
         async function deleteItem(id) {
-            if (!window.confirm('Ջնջե՞լ այս հայտարարությունը։')) return;
+            const confirmDelete = window.confirm(`Ջնջե՞լ այս հայտարարությունը՝ ընդմիշտ:\nID: ${id}`);
+            if (!confirmDelete) return;
 
             try {
                 const response = await supabaseRequest('advertisements', {
                     method: 'DELETE',
-                    params: `id=eq.${encodeURIComponent(id)}`
+                    params: { id: `eq.${id}` }
                 });
-                if (response) {
-                    showMessage('Հայտարարությունը հաջողությամբ ջնջվեց։');
-                }
+
+                console.log('Delete response:', response);
+                showMessage('✓ Հայտարարությունը հաջողությամբ ջնջվեց։');
                 if (isAdmin) removePendingCard(id);
                 await loadListings();
                 if (isAdmin) await loadPendingAdmin();
             } catch (error) {
                 console.error('Delete failed:', error);
-                showMessage('Սխալ տեղի ունեցավ ջնջման ժամանակ։');
+                console.error('Error details:', error.response);
+                showMessage(`✗ Ջնջման սխալ: ${error.message}`);
             }
         }
 
