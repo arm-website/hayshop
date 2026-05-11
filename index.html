@@ -502,14 +502,70 @@
         .hidden {
             display: none !important;
         }
-        .empty-state {
-            grid-column: 1 / -1;
-            text-align: center;
-            color: var(--text-secondary);
-            background: rgba(226, 232, 240, 0.55);
-            border-radius: 20px;
-            padding: 42px 24px;
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 24px;
+            flex-wrap: wrap;
         }
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            background: white;
+            color: var(--surface-soft);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .pagination button:hover,
+        .pagination button.active {
+            background: var(--brand);
+            color: white;
+        }
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .logout-btn {
+            display: none;
+            background: var(--danger);
+            color: white;
+        }
+        .logout-btn.show {
+            display: inline-block;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            border-top-color: var(--brand);
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .btn-loading {
+            position: relative;
+            color: transparent;
+        }
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
         @media (max-width: 900px) {
             header { flex-direction: column; align-items: flex-start; gap: 16px; }
             .search-panel { flex-direction: column; align-items: stretch; }
@@ -528,6 +584,7 @@
         <div class="nav-btns">
             <button type="button" class="btn btn-secondary" onclick="resetFilters()">Գլխավոր</button>
             <button type="button" class="btn btn-primary" onclick="openModal('avelacmanModal')">+ Ավելացնել Հայտարարություն</button>
+            <button type="button" class="btn btn-alert logout-btn" id="logoutBtn" onclick="logoutAdmin()">Ելք</button>
             <button type="button" class="btn btn-alert" onclick="openModal('adminModal')">Ադմին</button>
         </div>
     </header>
@@ -583,6 +640,7 @@
         <section class="grid" id="listingGrid" aria-live="polite">
             <div id="loading" class="empty-state">Բեռնվում է...</div>
         </section>
+        <div class="pagination" id="paginationControls"></div>
     </main>
     <footer class="footer">
         <div class="footer-container">
@@ -765,7 +823,10 @@
             citySelect: null,
             adminPendingSearch: null,
             adminPendingCity: null,
-            adminRefreshButton: null
+            adminRefreshButton: null,
+            logoutBtn: null,
+            currentPage: 1,
+            itemsPerPage: 12
         };
 
         function showMessage(text) {
@@ -882,7 +943,7 @@
             return card;
         }
 
-        function renderListings(items) {
+        function renderListings(items, page = state.currentPage) {
             if (!state.listingGrid) return;
             state.listingGrid.innerHTML = '';
 
@@ -891,12 +952,72 @@
                     ? 'Ոչ մի հայտարարություն չի գտնվել։ Փորձեք տարբեր հարցում կամ քաղաք։'
                     : 'Տեղի չունի հայտարարություն։ Փորձեք ավելացնել հայտարարություն կամ սպասեք հաստատմանը։';
                 state.listingGrid.innerHTML = `<div class="empty-state">${message}</div>`;
+                renderPagination(0);
                 return;
             }
 
+            const start = (page - 1) * state.itemsPerPage;
+            const end = start + state.itemsPerPage;
+            const pageItems = items.slice(start, end);
+
             const fragment = document.createDocumentFragment();
-            items.forEach(item => fragment.appendChild(createCard(item)));
+            pageItems.forEach(item => fragment.appendChild(createCard(item)));
             state.listingGrid.appendChild(fragment);
+
+            renderPagination(items.length);
+        }
+
+        function renderPagination(totalItems) {
+            const paginationControls = document.getElementById('paginationControls');
+            if (!paginationControls) return;
+
+            const totalPages = Math.ceil(totalItems / state.itemsPerPage);
+            paginationControls.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            const fragment = document.createDocumentFragment();
+
+            // Previous button
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'pagination-btn';
+            prevBtn.textContent = 'Նախկին';
+            prevBtn.disabled = state.currentPage === 1;
+            prevBtn.onclick = () => changePage(state.currentPage - 1);
+            fragment.appendChild(prevBtn);
+
+            // Page numbers
+            const maxVisible = 5;
+            let startPage = Math.max(1, state.currentPage - Math.floor(maxVisible / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+            if (endPage - startPage + 1 < maxVisible) {
+                startPage = Math.max(1, endPage - maxVisible + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `pagination-btn ${i === state.currentPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                pageBtn.onclick = () => changePage(i);
+                fragment.appendChild(pageBtn);
+            }
+
+            // Next button
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'pagination-btn';
+            nextBtn.textContent = 'Հաջորդ';
+            nextBtn.disabled = state.currentPage === totalPages;
+            nextBtn.onclick = () => changePage(state.currentPage + 1);
+            fragment.appendChild(nextBtn);
+
+            paginationControls.appendChild(fragment);
+        }
+
+        function changePage(page) {
+            state.currentPage = page;
+            const visibleItems = getVisibleListings();
+            renderListings(visibleItems, page);
         }
 
         function getVisibleListings() {
@@ -920,6 +1041,7 @@
                     params: 'select=*,created_at&order=created_at.desc'
                 });
                 listings = Array.isArray(data) ? data.map(normalizeListing) : [];
+                state.currentPage = 1;
                 renderListings(getVisibleListings());
             } catch (error) {
                 console.error('Load listings failed:', error);
@@ -1097,6 +1219,7 @@
             if (!state.searchInput || !state.citySelect) return;
             state.searchInput.value = '';
             state.citySelect.value = '';
+            state.currentPage = 1;
             renderListings(getVisibleListings());
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -1114,6 +1237,7 @@
                 const dashboard = document.getElementById('adminDashboard');
                 if (login) login.classList.add('hidden');
                 if (dashboard) dashboard.classList.remove('hidden');
+                if (state.logoutBtn) state.logoutBtn.style.display = 'inline-block';
                 loadPendingAdmin();
             } else {
                 showMessage('Սխալ գաղտնաբառ։');
@@ -1124,6 +1248,7 @@
             isAdmin = false;
             renderListings(getVisibleListings());
             closeModal('adminModal');
+            if (state.logoutBtn) state.logoutBtn.style.display = 'none';
             showMessage('Ադմինից դուրս եկաք։');
         }
 
@@ -1147,6 +1272,10 @@
             });
         }
 
+        function sanitizeInput(input) {
+            return input.trim().replace(/[<>]/g, '').substring(0, 1000);
+        }
+
         async function submitAdvertisement(event) {
             event.preventDefault();
             const form = event.currentTarget;
@@ -1154,15 +1283,17 @@
             setFormState(form, true);
 
             try {
-                const name = document.getElementById('businessName')?.value.trim() || '';
+                const name = sanitizeInput(document.getElementById('businessName')?.value || '');
                 const city = document.getElementById('businessCity')?.value || '';
-                const description = document.getElementById('businessDescription')?.value.trim() || '';
+                const description = sanitizeInput(document.getElementById('businessDescription')?.value || '');
                 const logoFile = document.getElementById('businessLogo')?.files?.[0] || null;
 
                 const errors = [];
                 if (!name) errors.push('Անվանումը պարտադիր է։');
                 if (!city) errors.push('Քաղաքը պարտադիր է։');
                 if (!description) errors.push('Նկարագրությունը պարտադիր է։');
+                if (name.length > 100) errors.push('Անվանումը չպետք է գերազանցի 100 նիշը։');
+                if (description.length > 500) errors.push('Նկարագրությունը չպետք է գերազանցի 500 նիշը։');
                 if (!logoFile) {
                     errors.push('Նկարը պարտադիր է։');
                 } else if (!logoFile.type.startsWith('image/')) {
@@ -1363,6 +1494,7 @@
         }
 
         function updateListings() {
+            state.currentPage = 1;
             renderListings(getVisibleListings());
         }
 
@@ -1373,6 +1505,9 @@
             state.adminPendingSearch = document.getElementById('adminPendingSearch');
             state.adminPendingCity = document.getElementById('adminPendingCity');
             state.adminRefreshButton = document.getElementById('adminPendingRefresh');
+            state.logoutBtn = document.getElementById('logoutBtn');
+
+            if (state.logoutBtn) state.logoutBtn.style.display = 'none';
 
             const form = document.getElementById('avelacmanForm');
             if (form) {
