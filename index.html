@@ -1267,15 +1267,6 @@
             form.style.pointerEvents = isBusy ? 'none' : '';
         }
 
-        async function fileToDataUrl(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = () => reject(new Error('Cannot read file')); 
-                reader.readAsDataURL(file);
-            });
-        }
-
         function sanitizeInput(input) {
             return input.trim().replace(/[<>]/g, '').substring(0, 1000);
         }
@@ -1311,7 +1302,26 @@
                     return;
                 }
 
-                const logoUrl = await fileToDataUrl(logoFile);
+                const fileName = `${Date.now()}-${logoFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+                const uploadUrl = `${SUPABASE_URL}/storage/v1/object/logos/${fileName}`;
+                const uploadResponse = await fetch(uploadUrl, {
+                    method: 'PUT',
+                    headers: {
+                        apikey: SUPABASE_ANON_KEY,
+                        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': logoFile.type,
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    },
+                    body: logoFile
+                });
+
+                if (!uploadResponse.ok) {
+                    const errorText = await uploadResponse.text();
+                    throw new Error(`Upload failed: ${uploadResponse.status} ${errorText}`);
+                }
+
+                const logoUrl = `${SUPABASE_URL}/storage/v1/object/public/logos/${fileName}`;
                 const newListing = {
                     name,
                     city,
@@ -1592,4 +1602,3 @@
     </script>
 </body>
 </html>
-
