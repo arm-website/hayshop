@@ -1197,10 +1197,14 @@
 
         async function approveItem(id) {
             try {
-                await supabaseRequest(`advertisements?id=eq.${id}`, {
+                const response = await supabaseRequest('advertisements', {
                     method: 'PATCH',
+                    params: `id=eq.${encodeURIComponent(id)}`,
                     body: { approved: true }
                 });
+                if (response) {
+                    showMessage('Հայտարարությունը հաջողությամբ հաստատվեց։');
+                }
                 if (isAdmin) removePendingCard(id);
                 await loadListings();
                 if (isAdmin) await loadPendingAdmin();
@@ -1214,9 +1218,13 @@
             if (!window.confirm('Ջնջե՞լ այս հայտարարությունը։')) return;
 
             try {
-                await supabaseRequest(`advertisements?id=eq.${id}`, {
-                    method: 'DELETE'
+                const response = await supabaseRequest('advertisements', {
+                    method: 'DELETE',
+                    params: `id=eq.${encodeURIComponent(id)}`
                 });
+                if (response) {
+                    showMessage('Հայտարարությունը հաջողությամբ ջնջվեց։');
+                }
                 if (isAdmin) removePendingCard(id);
                 await loadListings();
                 if (isAdmin) await loadPendingAdmin();
