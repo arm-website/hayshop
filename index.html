@@ -811,6 +811,8 @@
         const contactEmail = 'hayshop333@gmail.com';
         const adminSecret = '123456789';
         const SUPABASE_URL = 'https://rulyfpgjujoevvfuolml.supabase.co/rest/v1';
+        const SUPABASE_STORAGE_URL = SUPABASE_URL.replace('/rest/v1', '/storage/v1');
+        const SUPABASE_STORAGE_BUCKET = 'advertisements';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ1bHlmcGdqdWpvZXZ2ZnVvbG1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0ODE2MDUsImV4cCI6MjA5NDA1NzYwNX0._JoE2HYtZDxH8o9livkXS-DQAOLz1ea0qJ-XcGr0wlw';
 
         let listings = [];
@@ -1280,6 +1282,48 @@
             });
         }
 
+        function sanitizeFileName(name) {
+            return name
+                .replace(/[^a-zA-Z0-9\-_.]/g, '_')
+                .replace(/_+/g, '_')
+                .substring(0, 100);
+        }
+
+        function getStoragePublicUrl(path) {
+            return `${SUPABASE_STORAGE_URL}/object/public/${SUPABASE_STORAGE_BUCKET}/${encodeURIComponent(path)}`;
+        }
+
+        async function uploadFileToStorage(file) {
+            const fileName = `${Date.now()}-${sanitizeFileName(file.name)}`;
+            const uploadUrl = `${SUPABASE_STORAGE_URL}/object/${SUPABASE_STORAGE_BUCKET}/${encodeURIComponent(fileName)}`;
+
+            const response = await fetch(uploadUrl, {
+                method: 'PUT',
+                headers: {
+                    apikey: SUPABASE_ANON_KEY,
+                    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Content-Type': file.type,
+                    'Cache-Control': 'no-cache',
+                    Pragma: 'no-cache'
+                },
+                body: file
+            });
+
+            if (!response.ok) {
+                let errorMessage = `Storage upload failed: ${response.status}`;
+                try {
+                    const text = await response.text();
+                    const parsed = text ? JSON.parse(text) : null;
+                    if (parsed?.message) errorMessage = parsed.message;
+                } catch (_) {
+                    // ignore invalid JSON response
+                }
+                throw new Error(errorMessage);
+            }
+
+            return getStoragePublicUrl(fileName);
+        }
+
         async function submitAdvertisement(event) {
             event.preventDefault();
             const form = event.currentTarget;
@@ -1311,7 +1355,7 @@
                     return;
                 }
 
-                const logoUrl = await fileToDataUrl(logoFile);
+                const logoUrl = await uploadFileToStorage(logoFile);
                 const newListing = {
                     name,
                     city,
