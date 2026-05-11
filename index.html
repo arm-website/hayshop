@@ -553,94 +553,163 @@
     <script>
         const contactEmail = 'hayshop333@gmail.com';
         const adminSecret = '123456789';
-        const SUPABASE_URL = 'https://rulyfpgjujoevvfuolml.supabase.co/rest/v1/';
+        const SUPABASE_URL = 'https://rulyfpgjujoevvfuolml.supabase.co/rest/v1';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ1bHlmcGdqdWpvZXZ2ZnVvbG1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0ODE2MDUsImV4cCI6MjA5NDA1NzYwNX0._JoE2HYtZDxH8o9livkXS-DQAOLz1ea0qJ-XcGr0wlw';
+
         let listings = [];
         let isAdmin = false;
 
-        // Safely get DOM elements
-        function getElement(id) {
-            try {
-                return document.getElementById(id) || { 
-                    style: {}, 
-                    innerHTML: '', 
-                    value: '', 
-                    addEventListener: () => {},
-                    classList: { add: () => {}, remove: () => {}, toggle: () => {} },
-                    setAttribute: () => {}
-                };
-            } catch (e) {
-                return { 
-                    style: {}, 
-                    innerHTML: '', 
-                    value: '', 
-                    addEventListener: () => {},
-                    classList: { add: () => {}, remove: () => {}, toggle: () => {} },
-                    setAttribute: () => {}
-                };
-            }
+        const state = {
+            listingGrid: null,
+            searchInput: null,
+            citySelect: null
+        };
+
+        function showMessage(text) {
+            window.alert(text);
         }
 
-        const loadingElement = getElement('loading');
-        const listingGrid = getElement('listingGrid');
-        const searchInput = getElement('searchInput');
-        const citySelect = getElement('citySelect');
+        async function supabaseRequest(endpoint, { method = 'GET', body = null, headers = {}, params = '' } = {}) {
+            const url = `${SUPABASE_URL}/${endpoint}${params ? `?${params}` : ''}`;
+            const requestHeaders = {
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                Accept: 'application/json',
+                ...headers
+            };
 
-        // Supabase API helper
-        async function supabaseRequest(endpoint, options = {}) {
-            try {
-                const url = SUPABASE_URL + endpoint;
-                const headers = {
-                    'apikey': SUPABASE_ANON_KEY,
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                    'Content-Type': 'application/json',
-                    ...options.headers
-                };
-                
-                const response = await fetch(url, {
-                    ...options,
-                    headers
-                });
-                
-                if (!response.ok) {
-                    console.warn(`Supabase request failed: ${response.status} ${response.statusText}`);
-                    return []; // Return empty array instead of throwing
-                }
-                
-                return response.json();
-            } catch (error) {
-                console.warn('Supabase request error:', error);
-                return []; // Return empty array on error
+            if (body) {
+                requestHeaders['Content-Type'] = 'application/json';
             }
+
+            if (['POST', 'PATCH', 'DELETE'].includes(method.toUpperCase())) {
+                requestHeaders.Prefer = 'return=representation';
+            }
+
+            const response = await fetch(url, {
+                method,
+                headers: requestHeaders,
+                body: body ? JSON.stringify(body) : null
+            });
+
+            const text = await response.text();
+            const data = text ? JSON.parse(text) : null;
+
+            if (!response.ok) {
+                const error = new Error(`Supabase request failed: ${response.status} ${response.statusText}`);
+                error.response = data;
+                throw error;
+            }
+
+            return data;
         }
 
-        // Load listings from Supabase
+        function normalizeListing(item) {
+            return {
+                id: item.id,
+                name: item.name || 'Անհայտ',
+                city: item.city || 'Առկա չէ',
+                description: item.description || 'Նկարագրություն չկա։',
+                logo: item.logo_url || 'https://via.placeholder.com/640x480?text=HayShop',
+                approved: Boolean(item.approved)
+            };
+        }
+
+        function createCard(item) {
+            const card = document.createElement('article');
+            card.className = 'qart';
+
+            const image = document.createElement('img');
+            image.loading = 'lazy';
+            image.decoding = 'async';
+            image.src = item.logo;
+            image.alt = item.name;
+            card.appendChild(image);
+
+            const content = document.createElement('div');
+            content.className = 'qart-content';
+
+            const title = document.createElement('h3');
+            title.textContent = item.name;
+            content.appendChild(title);
+
+            const location = document.createElement('p');
+            location.textContent = `📍 ${item.city}`;
+            content.appendChild(location);
+
+            const actions = document.createElement('div');
+            actions.className = 'actions';
+
+            const detailsButton = document.createElement('button');
+            detailsButton.type = 'button';
+            detailsButton.className = 'btn btn-primary';
+            detailsButton.textContent = 'Տեսնել ավելին';
+            detailsButton.addEventListener('click', () => showDetails(item.id));
+            actions.appendChild(detailsButton);
+
+            if (isAdmin) {
+                const approveButton = document.createElement('button');
+                approveButton.type = 'button';
+                approveButton.className = 'btn btn-secondary';
+                approveButton.textContent = 'Հաստատել';
+                approveButton.addEventListener('click', () => approveItem(item.id));
+                actions.appendChild(approveButton);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.type = 'button';
+                deleteButton.className = 'btn btn-alert';
+                deleteButton.textContent = 'Ջնջել';
+                deleteButton.addEventListener('click', () => deleteItem(item.id));
+                actions.appendChild(deleteButton);
+            }
+
+            content.appendChild(actions);
+            card.appendChild(content);
+            return card;
+        }
+
+        function renderListings(items) {
+            if (!state.listingGrid) return;
+            state.listingGrid.innerHTML = '';
+
+            if (!items.length) {
+                const message = isAdmin
+                    ? 'Ոչ մի հայտարարություն չի գտնվել։ Փորձեք տարբեր հարցում կամ քաղաք։'
+                    : 'Տեղի չունի հայտարարություն։ Փորձեք ավելացնել հայտարարություն կամ սպասեք հաստատմանը։';
+                state.listingGrid.innerHTML = `<div class="empty-state">${message}</div>`;
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+            items.forEach(item => fragment.appendChild(createCard(item)));
+            state.listingGrid.appendChild(fragment);
+        }
+
+        function getVisibleListings() {
+            const query = state.searchInput.value.trim().toLowerCase();
+            const selectedCity = state.citySelect.value;
+
+            return listings.filter(item => {
+                if (!isAdmin && !item.approved) return false;
+                if (selectedCity && item.city !== selectedCity) return false;
+                if (!query) return true;
+                return item.name.toLowerCase().includes(query) || item.description.toLowerCase().includes(query);
+            });
+        }
+
         async function loadListings() {
+            if (!state.listingGrid) return;
+            state.listingGrid.innerHTML = '<div class="empty-state">Բեռնվում է...</div>';
+
             try {
-                console.log('Loading listings from Supabase...');
-                const data = await supabaseRequest('advertisements?order=created_at.desc');
-                listings = Array.isArray(data) ? data.map(item => ({
-                    fbKey: item.id,
-                    anun: item.name,
-                    kaxaq: item.city,
-                    nkaragir: item.description,
-                    logo: item.logo_url,
-                    hastatvac: item.approved
-                })) : [];
-                console.log('Loaded listings:', listings.length);
+                const data = await supabaseRequest('advertisements', {
+                    params: 'select=*,created_at&order=created_at.desc'
+                });
+                listings = Array.isArray(data) ? data.map(normalizeListing) : [];
+                renderListings(getVisibleListings());
             } catch (error) {
-                console.error('Error loading listings:', error);
-                listings = [];
-            }
-            
-            // Always hide loading and update UI
-            loadingElement.style.display = 'none';
-            updateListings();
-        }
-            } catch (error) {
-                console.error('Error loading listings:', error);
-                loadingElement.style.display = 'none';
-                listingGrid.innerHTML = '<div class="empty-state">Սխալ տեղի ունեցավ տվյալների բեռնման ժամանակ։</div>';
+                console.error('Load listings failed:', error);
+                state.listingGrid.innerHTML = '<div class="empty-state">Տվյալները բեռնելու ընթացքում սխալ առաջացավ։</div>';
             }
         }
 
@@ -650,223 +719,214 @@
             modal.classList.add('active');
             modal.setAttribute('aria-hidden', 'false');
         }
+
         function closeModal(id) {
             const modal = document.getElementById(id);
             if (!modal) return;
             modal.classList.remove('active');
             modal.setAttribute('aria-hidden', 'true');
         }
+
         function closeAllModals() {
             document.querySelectorAll('.modal.active').forEach(modal => {
                 modal.classList.remove('active');
                 modal.setAttribute('aria-hidden', 'true');
             });
         }
+
         function resetFilters() {
-            searchInput.value = '';
-            citySelect.value = '';
-            updateListings();
+            if (!state.searchInput || !state.citySelect) return;
+            state.searchInput.value = '';
+            state.citySelect.value = '';
+            renderListings(getVisibleListings());
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-        function filterByKeyword(keyword) {
-            searchInput.value = keyword;
-            updateListings();
-            document.getElementById('searchInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
+
         function authenticateAdmin() {
-            const value = document.getElementById('adminPassword').value;
-            if (value === adminSecret) {
+            const passwordInput = document.getElementById('adminPassword');
+            if (!passwordInput) return;
+
+            if (passwordInput.value === adminSecret) {
                 isAdmin = true;
                 closeModal('adminModal');
-                updateListings();
-                alert('Ադմին մուտքը հաջողվեց։');
+                renderListings(getVisibleListings());
+                showMessage('Ադմին մուտքն ընդունված է։');
             } else {
-                alert('Սխալ գաղտնաբառ։');
+                showMessage('Սխալ գաղտնաբառ։');
             }
         }
 
-        // Add form listener safely
-        const form = document.getElementById('avelacmanForm');
-        if (form) {
-            form.addEventListener('submit', async event => {
-                event.preventDefault();
-                
-                const button = form.querySelector('button[type="submit"]');
-                const logoInput = getElement('businessLogo');
-                const nameInput = getElement('businessName');
-                const cityInput = getElement('businessCity');
-                const descriptionInput = getElement('businessDescription');
-                
-                const logoFile = logoInput.files ? logoInput.files[0] : null;
-                const name = nameInput.value ? nameInput.value.trim() : '';
-                const city = cityInput.value || '';
-                const description = descriptionInput.value ? descriptionInput.value.trim() : '';
-                
-                // Validation
+        function setFormState(form, isBusy) {
+            if (!form) return;
+            const button = form.querySelector('button[type="submit"]');
+            if (button) {
+                button.disabled = isBusy;
+                button.textContent = isBusy ? 'Բեռնվում է...' : 'Ուղարկել հաստատման';
+            }
+            form.style.opacity = isBusy ? '0.7' : '';
+            form.style.pointerEvents = isBusy ? 'none' : '';
+        }
+
+        async function submitAdvertisement(event) {
+            event.preventDefault();
+            const form = event.currentTarget;
+            if (!form) return;
+            setFormState(form, true);
+
+            try {
+                const name = document.getElementById('businessName')?.value.trim() || '';
+                const city = document.getElementById('businessCity')?.value || '';
+                const description = document.getElementById('businessDescription')?.value.trim() || '';
+                const logoFile = document.getElementById('businessLogo')?.files?.[0] || null;
+
                 const errors = [];
-                if (!name) errors.push('Անվանումը պարտադիր է');
-                if (!city) errors.push('Քաղաքի ընտրությունը պարտադիր է');
-                if (!description) errors.push('Նկարագրությունը պարտադիր է');
-                if (!logoFile) errors.push('Նկարի ընտրությունը պարտադիր է');
-                else if (!logoFile.type || !logoFile.type.startsWith('image/')) errors.push('Նկարը պետք է լինի պատկերի ֆայլ');
-                else if (logoFile.size > 5 * 1024 * 1024) errors.push('Նկարը չպետք է գերազանցի 5MB');
-                
-                if (errors.length > 0) {
-                    alert('Խնդրում ենք ուղղել հետևյալ սխալները:\n' + errors.join('\n'));
+                if (!name) errors.push('Անվանումը պարտադիր է։');
+                if (!city) errors.push('Քաղաքը պարտադիր է։');
+                if (!description) errors.push('Նկարագրությունը պարտադիր է։');
+                if (!logoFile) {
+                    errors.push('Նկարը պարտադիր է։');
+                } else if (!logoFile.type.startsWith('image/')) {
+                    errors.push('Ընտրեք պատկերի ֆայլ։');
+                } else if (logoFile.size > 5 * 1024 * 1024) {
+                    errors.push('Նկարը չպետք է գերազանցի 5MB։');
+                }
+
+                if (errors.length) {
+                    showMessage(`Խնդրում ենք ուղղել հետևյալ սխալները:\n${errors.join('\n')}`);
                     return;
                 }
-                
-                if (button) {
-                    button.disabled = true;
-                    button.textContent = 'Բեռնվում է...';
-                }
-                form.style.opacity = '0.7';
-                form.style.pointerEvents = 'none';
-                
-                try {
-                    // For now, use a placeholder logo URL (you'll need to set up Supabase Storage)
-                    const logoUrl = 'https://via.placeholder.com/300x200?text=Logo'; // TODO: Implement file upload
-                    
-                    const newItem = {
-                        name: name,
-                        city: city,
-                        description: description,
-                        logo_url: logoUrl,
-                        approved: false
-                    };
-                    
-                    const result = await supabaseRequest('advertisements', {
-                        method: 'POST',
-                        body: JSON.stringify(newItem)
-                    });
-                    
-                    if (result && result.id) {
-                        alert('Հայտարարությունը հաջողությամբ ուղարկվեց հաստատման։');
-                        form.reset();
-                        closeModal('avelacmanModal');
-                        loadListings(); // Reload listings
-                    } else {
-                        alert('Սխալ տեղի ունեցավ հայտարարություն ուղարկելիս։ Խնդրում ենք կրկին փորձել։');
-                    }
-                    
-                } catch (error) {
-                    console.error('Error submitting advertisement:', error);
-                    alert('Սխալ տեղի ունեցավ հայտարարություն ուղարկելիս։ Խնդրում ենք կրկին փորձել։');
-                } finally {
-                    if (button) {
-                        button.disabled = false;
-                        button.textContent = 'Ուղարկել հաստատման';
-                    }
-                    form.style.opacity = '';
-                    form.style.pointerEvents = '';
-                }
-            });
-        }
 
-        function updateListings() {
-            listingGrid.innerHTML = '';
-            if (listings.length === 0) {
-                listingGrid.innerHTML = '<div class="empty-state">Տեղի չունի հայտարարություն։</div>';
-                return;
-            }
+                const newListing = {
+                    name,
+                    city,
+                    description,
+                    logo_url: 'https://via.placeholder.com/640x480?text=HayShop',
+                    approved: false
+                };
 
-            const query = searchInput.value.toLowerCase().trim();
-            const selectedCity = citySelect.value;
-            const visibleItems = listings.filter(item => {
-                if (!isAdmin && !item.hastatvac) return false;
-                if (selectedCity && item.kaxaq !== selectedCity) return false;
-                if (!query) return true;
-                const nameMatch = item.anun.toLowerCase().includes(query);
-                const descriptionMatch = item.nkaragir?.toLowerCase().includes(query);
-                return nameMatch || descriptionMatch;
-            });
-
-            if (!visibleItems.length) {
-                listingGrid.innerHTML = '<div class="empty-state">Ոչ մի հայտարարություն չի գտնվել։ Փորձեք ուրիշ սյուն կամ քաղաք։</div>';
-                return;
-            }
-
-            visibleItems.forEach(item => {
-                const card = document.createElement('article');
-                card.className = 'qart';
-                card.innerHTML = `
-                    <img loading="lazy" decoding="async" src="${item.logo}" alt="${item.anun}">
-                    <div class="qart-content">
-                        <h3>${item.anun}</h3>
-                        <p>📍 ${item.kaxaq}</p>
-                        <div class="actions">
-                            <button type="button" class="btn btn-primary" onclick="showDetails('${item.fbKey}')">Տեսնել ավելին</button>
-                            ${isAdmin ? `<button type="button" class="btn btn-secondary" onclick="approveItem('${item.fbKey}')">Հաստատել</button>
-                            <button type="button" class="btn btn-alert" onclick="deleteItem('${item.fbKey}')">Ջնջել</button>` : ''}
-                        </div>
-                    </div>
-                `;
-                listingGrid.appendChild(card);
-            });
-        }
-        function showDetails(key) {
-            const item = listings.find(x => x.fbKey === key);
-            if (!item) return;
-            document.getElementById('detailsContent').innerHTML = `
-                <button class="modal-close" type="button" aria-label="Փակել" onclick="closeModal('detailsModal')">✕</button>
-                <h3>${item.anun}</h3>
-                <p>${item.nkaragir || 'Նկարագրություն չկա։'}</p>
-                <img loading="lazy" decoding="async" src="${item.logo}" alt="${item.anun}" style="border-radius: 18px; margin-top: 18px;">
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('detailsModal')">Փակել</button>
-                </div>
-            `;
-            openModal('detailsModal');
-        }
-        async function approveItem(key) {
-            try {
-                const result = await supabaseRequest(`advertisements?id=eq.${key}`, {
-                    method: 'PATCH',
-                    body: JSON.stringify({ approved: true })
+                const response = await supabaseRequest('advertisements', {
+                    method: 'POST',
+                    body: newListing
                 });
-                if (result && result.length > 0) {
-                    loadListings();
-                } else {
-                    alert('Սխալ տեղի ունեցավ հաստատման ժամանակ։');
+
+                const created = Array.isArray(response) ? response[0] : response;
+                if (!created?.id) {
+                    throw new Error('Failed to create listing.');
                 }
+
+                showMessage('Հայտարարությունը հաջողությամբ ուղարկվեց հաստատման։');
+                form.reset();
+                closeModal('avelacmanModal');
+                await loadListings();
             } catch (error) {
-                console.error('Error approving item:', error);
-                alert('Սխալ տեղի ունեցավ հաստատման ժամանակ։');
+                console.error('Submit advertisement failed:', error);
+                showMessage('Սխալ տեղի ունեցավ հայտարարություն ուղարկելիս։ Խնդրում ենք կրկին փորձել։');
+            } finally {
+                setFormState(form, false);
             }
         }
-        async function deleteItem(key) {
-            if (!confirm('Ջնջե՞լ այս հայտարարությունը։')) return;
+
+        async function approveItem(id) {
             try {
-                const result = await supabaseRequest(`advertisements?id=eq.${key}`, {
+                await supabaseRequest(`advertisements?id=eq.${id}`, {
+                    method: 'PATCH',
+                    body: { approved: true }
+                });
+                await loadListings();
+            } catch (error) {
+                console.error('Approve failed:', error);
+                showMessage('Սխալ տեղի ունեցավ հաստատման ժամանակ։');
+            }
+        }
+
+        async function deleteItem(id) {
+            if (!window.confirm('Ջնջե՞լ այս հայտարարությունը։')) return;
+
+            try {
+                await supabaseRequest(`advertisements?id=eq.${id}`, {
                     method: 'DELETE'
                 });
-                loadListings();
+                await loadListings();
             } catch (error) {
-                console.error('Error deleting item:', error);
-                alert('Սխալ տեղի ունեցավ ջնջման ժամանակ։');
+                console.error('Delete failed:', error);
+                showMessage('Սխալ տեղի ունեցավ ջնջման ժամանակ։');
             }
         }
-        function toggleChat() {
-            const box = document.getElementById('chatBox');
-            const isOpen = box.classList.toggle('active');
-            box.setAttribute('aria-hidden', String(!isOpen));
+
+        function showDetails(id) {
+            const item = listings.find(entry => entry.id === id);
+            if (!item) return;
+            const detailsContent = document.getElementById('detailsContent');
+            if (!detailsContent) return;
+            detailsContent.innerHTML = '';
+
+            const closeButton = document.createElement('button');
+            closeButton.className = 'modal-close';
+            closeButton.type = 'button';
+            closeButton.setAttribute('aria-label', 'Փակել');
+            closeButton.textContent = '✕';
+            closeButton.addEventListener('click', () => closeModal('detailsModal'));
+            detailsContent.appendChild(closeButton);
+
+            const title = document.createElement('h3');
+            title.textContent = item.name;
+            detailsContent.appendChild(title);
+
+            const description = document.createElement('p');
+            description.textContent = item.description;
+            detailsContent.appendChild(description);
+
+            const image = document.createElement('img');
+            image.loading = 'lazy';
+            image.decoding = 'async';
+            image.src = item.logo;
+            image.alt = item.name;
+            image.style.borderRadius = '18px';
+            image.style.marginTop = '18px';
+            detailsContent.appendChild(image);
+
+            const actions = document.createElement('div');
+            actions.className = 'modal-actions';
+            const closeAction = document.createElement('button');
+            closeAction.type = 'button';
+            closeAction.className = 'btn btn-secondary';
+            closeAction.textContent = 'Փակել';
+            closeAction.addEventListener('click', () => closeModal('detailsModal'));
+            actions.appendChild(closeAction);
+            detailsContent.appendChild(actions);
+
+            openModal('detailsModal');
         }
+
+        function addChatMessage(html, sender) {
+            const messages = document.getElementById('chatMessages');
+            if (!messages) return;
+            const message = document.createElement('div');
+            message.className = `chat-message ${sender}`;
+            message.innerHTML = html;
+            messages.appendChild(message);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
         function sendChat() {
             const input = document.getElementById('chatInput');
+            if (!input) return;
             const value = input.value.trim();
             if (!value) return;
-            const messages = document.getElementById('chatMessages');
-            if (!/^[ա-ֆԱ-Ֆ0-9\s.,?!։՝«»()]+$/.test(value)) {
-                messages.insertAdjacentHTML('beforeend', '<div class="chat-message bot"><strong>⚠️ Բոտ:</strong> Խնդրում ենք գրել միայն հայատառ։</div>');
+
+            const validText = /^[ա-ֆԱ-Ֆ0-9\s.,?!։՝«»()]+$/.test(value);
+            if (!validText) {
+                addChatMessage('<strong>⚠️ Բոտ:</strong> Խնդրում ենք գրել միայն հայատառ։', 'bot');
                 input.value = '';
-                messages.scrollTop = messages.scrollHeight;
                 return;
             }
-            messages.insertAdjacentHTML('beforeend', `<div class="chat-message user">${value}</div>`);
+
+            addChatMessage(value, 'user');
             input.value = '';
-            messages.scrollTop = messages.scrollHeight;
+
             const lower = value.toLowerCase();
             let response = 'Ներողություն, չհասկացա հարցը։ Գրեք պարզ կամ ուղարկեք էլ. փոստով՝ ' + contactEmail + '.';
+
             if (lower.includes('բիզնես') || lower.includes('գրանց')) {
                 response = 'Բիզնեսի գրանցման հարցերի համար գրեք՝ ' + contactEmail + '.';
             } else if (lower.includes('գովազդ') || lower.includes('vip')) {
@@ -878,33 +938,69 @@
             } else if (lower.includes('բարև') || lower.includes('ողջույն')) {
                 response = 'Բարև, ինչով կարող ենք օգնել ձեզ այսօր։';
             }
-            setTimeout(() => {
-                messages.insertAdjacentHTML('beforeend', `<div class="chat-message bot"><strong>Բոտ:</strong> ${response}</div>`);
-                messages.scrollTop = messages.scrollHeight;
-            }, 450);
+
+            setTimeout(() => addChatMessage(`<strong>Բոտ:</strong> ${response}`, 'bot'), 450);
         }
-        document.addEventListener('DOMContentLoaded', () => {
-            try {
-                loadListings();
-                searchInput.addEventListener('input', updateListings);
-                citySelect.addEventListener('change', updateListings);
-                
-                // Add modal close listeners safely
-                document.querySelectorAll('.modal').forEach(modal => {
-                    if (modal) {
-                        modal.addEventListener('click', event => {
-                            if (event.target === modal) closeModal(modal.id);
-                        });
+
+        function updateListings() {
+            renderListings(getVisibleListings());
+        }
+
+        function initialize() {
+            state.listingGrid = document.getElementById('listingGrid');
+            state.searchInput = document.getElementById('searchInput');
+            state.citySelect = document.getElementById('citySelect');
+
+            const form = document.getElementById('avelacmanForm');
+            if (form) {
+                form.addEventListener('submit', submitAdvertisement);
+            }
+
+            if (state.searchInput) {
+                state.searchInput.addEventListener('input', updateListings);
+            }
+            if (state.citySelect) {
+                state.citySelect.addEventListener('change', updateListings);
+            }
+
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', event => {
+                    if (event.target === modal) closeModal(modal.id);
+                });
+            });
+
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape') closeAllModals();
+            });
+
+            const chatToggle = document.querySelector('.chat-toggle');
+            if (chatToggle) {
+                chatToggle.addEventListener('click', () => {
+                    const box = document.getElementById('chatBox');
+                    if (!box) return;
+                    const active = box.classList.toggle('active');
+                    box.setAttribute('aria-hidden', String(!active));
+                });
+            }
+
+            const chatButton = document.querySelector('.chat-footer button');
+            if (chatButton) chatButton.addEventListener('click', sendChat);
+
+            const chatInput = document.getElementById('chatInput');
+            if (chatInput) {
+                chatInput.addEventListener('keydown', event => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        sendChat();
                     }
                 });
-                
-                document.addEventListener('keydown', event => {
-                    if (event.key === 'Escape') closeAllModals();
-                });
-            } catch (error) {
-                console.error('Error initializing page:', error);
             }
-        });
+
+            loadListings();
+        }
+
+        document.addEventListener('DOMContentLoaded', initialize);
+
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js').catch(() => {});
@@ -913,5 +1009,3 @@
     </script>
 </body>
 </html>
-
-
