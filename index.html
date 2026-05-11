@@ -351,28 +351,105 @@
         }
         .admin-dashboard {
             margin-top: 18px;
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid rgba(148, 163, 184, 0.28);
+            padding: 22px;
+            box-shadow: var(--shadow);
         }
-        .admin-dashboard h4 {
-            margin: 0 0 14px;
-            font-size: 1.1rem;
+        .admin-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .admin-panel-title {
+            margin: 0;
+            font-size: 1.15rem;
+            font-weight: 700;
             color: var(--surface-soft);
+        }
+        .admin-panel-subtitle {
+            margin: 6px 0 0;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.55;
+        }
+        .admin-info-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+        .admin-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(34, 197, 94, 0.12);
+            color: var(--surface-soft);
+            font-size: 0.95rem;
+            font-weight: 600;
         }
         .admin-pending-list {
             display: grid;
             gap: 14px;
-            max-height: 320px;
+            max-height: 340px;
             overflow-y: auto;
             padding-right: 4px;
         }
         .admin-pending-card {
-            background: #f8fafc;
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            padding: 14px;
+            display: grid;
+            gap: 12px;
+            background: white;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            border-radius: 20px;
+            padding: 18px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
         }
-        .admin-pending-card p {
-            margin: 0 0 10px;
+        .admin-pending-card .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .admin-pending-card .card-header strong {
+            color: var(--surface-soft);
+            font-size: 1rem;
+        }
+        .admin-pending-card .card-header .card-meta {
             color: var(--text-secondary);
+            font-size: 0.95rem;
+            white-space: nowrap;
+        }
+        .admin-pending-card p.description {
+            margin: 0;
+            color: var(--text-secondary);
+            line-height: 1.75;
+        }
+        .admin-pending-card .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .btn-sm {
+            padding: 10px 14px;
+            font-size: 0.95rem;
+        }
+        .btn-success {
+            background: #16a34a;
+            color: white;
+        }
+        .btn-success:hover,
+        .btn-alert:hover,
+        .btn-secondary:hover,
+        .btn-primary:hover {
+            opacity: 0.95;
         }
         .hidden {
             display: none !important;
@@ -563,6 +640,16 @@
                 </div>
             </div>
             <div id="adminDashboard" class="admin-dashboard hidden">
+                <div class="admin-panel-header">
+                    <div>
+                        <p class="admin-panel-title">Ադմին կառավարում</p>
+                        <p class="admin-panel-subtitle">Ահա սպասված հայտարարությունները։ Դուք կարող եք հաստատել կամ ջնջել դրանք արագ և անվտանգ։</p>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="logoutAdmin()">Ելք</button>
+                </div>
+                <div class="admin-info-bar">
+                    <span id="adminPendingCount" class="admin-pill">Բեռնում է...</span>
+                </div>
                 <h4>Սպասման տակ գտնվող հայտարարություններ</h4>
                 <div id="adminPendingList" class="admin-pending-list"></div>
                 <div class="modal-actions">
@@ -751,7 +838,7 @@
         async function loadPendingAdmin() {
             const pendingList = document.getElementById('adminPendingList');
             if (!pendingList) return;
-            pendingList.innerHTML = '<div class="empty-state">Բեռնվում է...</div>';
+            pendingList.innerHTML = '<div class="empty-state">Բեռնում է...</div>';
 
             try {
                 const data = await supabaseRequest('advertisements', {
@@ -759,10 +846,18 @@
                 });
                 const items = Array.isArray(data) ? data.map(normalizeListing) : [];
                 renderPendingAdmin(items);
+                updateAdminPendingCount(items.length);
             } catch (error) {
                 console.error('Load pending admin failed:', error);
                 pendingList.innerHTML = '<div class="empty-state">Սխալ տեղի ունեցավ սպասման տակ գտնվող հայտարարությունները բեռնելիս։</div>';
+                updateAdminPendingCount(0);
             }
+        }
+
+        function updateAdminPendingCount(count) {
+            const badge = document.getElementById('adminPendingCount');
+            if (!badge) return;
+            badge.textContent = count ? `Սպասում է ${count} հայտ` : 'Ոչ մի հայտ չի սպասում';
         }
 
         function renderPendingAdmin(items) {
@@ -780,11 +875,22 @@
                 const card = document.createElement('div');
                 card.className = 'admin-pending-card';
 
-                const title = document.createElement('p');
-                title.innerHTML = `<strong>${item.name}</strong> — ${item.city}`;
-                card.appendChild(title);
+                const header = document.createElement('div');
+                header.className = 'card-header';
+
+                const title = document.createElement('strong');
+                title.textContent = item.name;
+                header.appendChild(title);
+
+                const meta = document.createElement('span');
+                meta.className = 'card-meta';
+                meta.textContent = item.city;
+                header.appendChild(meta);
+
+                card.appendChild(header);
 
                 const description = document.createElement('p');
+                description.className = 'description';
                 description.textContent = item.description;
                 card.appendChild(description);
 
@@ -793,7 +899,7 @@
 
                 const approveButton = document.createElement('button');
                 approveButton.type = 'button';
-                approveButton.className = 'btn btn-secondary';
+                approveButton.className = 'btn btn-success';
                 approveButton.textContent = 'Հաստատել';
                 approveButton.addEventListener('click', () => approveItem(item.id));
                 actions.appendChild(approveButton);
@@ -871,6 +977,13 @@
             } else {
                 showMessage('Սխալ գաղտնաբառ։');
             }
+        }
+
+        function logoutAdmin() {
+            isAdmin = false;
+            renderListings(getVisibleListings());
+            closeModal('adminModal');
+            showMessage('Ադմինից դուրս եկաք։');
         }
 
         function setFormState(form, isBusy) {
