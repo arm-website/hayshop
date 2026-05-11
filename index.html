@@ -1271,6 +1271,15 @@
             return input.trim().replace(/[<>]/g, '').substring(0, 1000);
         }
 
+        async function fileToDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error('Cannot read file'));
+                reader.readAsDataURL(file);
+            });
+        }
+
         async function submitAdvertisement(event) {
             event.preventDefault();
             const form = event.currentTarget;
@@ -1293,8 +1302,8 @@
                     errors.push('Նկարը պարտադիր է։');
                 } else if (!logoFile.type.startsWith('image/')) {
                     errors.push('Ընտրեք պատկերի ֆայլ։');
-                } else if (logoFile.size > 5 * 1024 * 1024) {
-                    errors.push('Նկարը չպետք է գերազանցի 5MB։');
+                } else if (logoFile.size > 1 * 1024 * 1024) {
+                    errors.push('Նկարը չպետք է գերազանցի 1MB։');
                 }
 
                 if (errors.length) {
@@ -1302,26 +1311,7 @@
                     return;
                 }
 
-                const fileName = `${Date.now()}-${logoFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-                const uploadUrl = `${SUPABASE_URL}/storage/v1/object/logos/${fileName}`;
-                const uploadResponse = await fetch(uploadUrl, {
-                    method: 'PUT',
-                    headers: {
-                        apikey: SUPABASE_ANON_KEY,
-                        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-                        'Content-Type': logoFile.type,
-                        'Cache-Control': 'no-cache',
-                        'Pragma': 'no-cache'
-                    },
-                    body: logoFile
-                });
-
-                if (!uploadResponse.ok) {
-                    const errorText = await uploadResponse.text();
-                    throw new Error(`Upload failed: ${uploadResponse.status} ${errorText}`);
-                }
-
-                const logoUrl = `${SUPABASE_URL}/storage/v1/object/public/logos/${fileName}`;
+                const logoUrl = await fileToDataUrl(logoFile);
                 const newListing = {
                     name,
                     city,
@@ -1346,7 +1336,7 @@
                 await loadListings();
             } catch (error) {
                 console.error('Submit advertisement failed:', error);
-                showMessage('Սխալ տեղի ունեցավ հայտարարություն ուղարկելիս։ Խնդրում ենք կրկին փորձել։');
+                showMessage(`✗ Սխալ տեղի ունեցավ հայտարարություն ուղարկելիս: ${error.message}`);
             } finally {
                 setFormState(form, false);
             }
