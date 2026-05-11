@@ -807,7 +807,9 @@
             </div>
         </div>
     </div>
-    <script>
+    <script type="module">
+        import { supabase } from './supabase.js';
+
         const contactEmail = 'hayshop333@gmail.com';
         const adminSecret = '123456789';
         // Supabase setup:
@@ -816,11 +818,6 @@
         // 3. Create read policy: create policy "Public read advertisements" on storage.objects for select to public using (bucket_id = 'advertisements');
         // 4. Create database table: CREATE TABLE advertisements (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, name text NOT NULL, city text NOT NULL, description text NOT NULL, logo_url text, approved boolean DEFAULT false, created_at timestamptz DEFAULT now());
         // 5. Enable RLS and create policies for the table
-        const SUPABASE_BASE_URL = 'https://rulyfpgjujoevvfuolml.supabase.co';
-        const SUPABASE_REST_URL = `${SUPABASE_BASE_URL}/rest/v1`;
-        const SUPABASE_STORAGE_URL = `${SUPABASE_BASE_URL}/storage/v1`;
-        const SUPABASE_STORAGE_BUCKET = 'advertisements';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ1bHlmcGdqdWpvZXZ2ZnVvbG1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0ODE2MDUsImV4cCI6MjA5NDA1NzYwNX0._JoE2HYtZDxH8o9livkXS-DQAOLz1ea0qJ-XcGr0wlw';
 
         let listings = [];
         let pendingItems = [];
@@ -842,59 +839,48 @@
             window.alert(text);
         }
 
-        async function supabaseRequest(endpoint, { method = 'GET', body = null, headers = {}, params = '' } = {}) {
-            const url = new URL(`${SUPABASE_REST_URL}/${endpoint}`);
-            if (params) {
-                if (typeof params === 'string') {
-                    url.search = params;
-                } else if (typeof params === 'object') {
-                    Object.entries(params).forEach(([key, value]) => {
-                        if (value !== undefined && value !== null) {
-                            url.searchParams.set(key, value);
-                        }
-                    });
-                }
-            }
-
-            const requestHeaders = {
-                apikey: SUPABASE_ANON_KEY,
-                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-                Accept: 'application/json',
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache',
-                ...headers
-            };
-
-            if (body) {
-                requestHeaders['Content-Type'] = 'application/json';
-            }
-            if (['POST', 'PATCH', 'DELETE'].includes(method.toUpperCase())) {
-                requestHeaders.Prefer = 'return=representation';
-            }
-
-            url.searchParams.set('_', Date.now());
-
-            const response = await fetch(url.toString(), {
-                method,
-                headers: requestHeaders,
-                body: body ? JSON.stringify(body) : null
-            });
-            const text = await response.text();
-            let data = null;
+        async function supabaseRequest(endpoint, { method = 'GET', body = null, headers = {}, params = {} } = {}) {
             try {
-                data = text ? JSON.parse(text) : null;
-            } catch (_error) {
-                data = null;
-            }
+                let query = supabase.from(endpoint);
 
-            if (!response.ok) {
-                const message = data?.message || data?.error || text || response.statusText;
-                const error = new Error(`Supabase request failed: ${response.status} ${response.statusText} - ${message}`);
-                error.response = data;
+                if (method === 'GET') {
+                    if (params.select) {
+                        query = query.select(params.select);
+                    } else {
+                        query = query.select('*');
+                    }
+                    if (params.order) {
+                        const [column, direction] = params.order.split('.');
+                        query = query.order(column, { ascending: direction !== 'desc' });
+                    }
+                    if (params.approved !== undefined) {
+                        query = query.eq('approved', params.approved);
+                    }
+                    const { data, error } = await query;
+                    if (error) throw error;
+                    return data;
+                } else if (method === 'POST') {
+                    const { data, error } = await query.insert(body).select();
+                    if (error) throw error;
+                    return data;
+                } else if (method === 'PATCH') {
+                    if (params.id) {
+                        const { data, error } = await query.update(body).eq('id', params.id).select();
+                        if (error) throw error;
+                        return data;
+                    }
+                } else if (method === 'DELETE') {
+                    if (params.id) {
+                        const { error } = await query.delete().eq('id', params.id);
+                        if (error) throw error;
+                        return null;
+                    }
+                }
+                throw new Error(`Unsupported method: ${method}`);
+            } catch (error) {
+                console.error('Supabase request failed:', error);
                 throw error;
             }
-
-            return data;
         }
 
         function normalizeListing(item) {
@@ -1057,7 +1043,7 @@
 
             try {
                 const data = await supabaseRequest('advertisements', {
-                    params: 'select=id,name,city,description,logo_url,approved&order=approved.desc'
+                    params: { select: 'id,name,city,description,logo_url,approved', order: 'approved.desc' }
                 });
                 listings = Array.isArray(data) ? data.map(normalizeListing) : [];
                 state.currentPage = 1;
@@ -1075,7 +1061,7 @@
 
             try {
                 const data = await supabaseRequest('advertisements', {
-                    params: 'select=id,name,city,description,logo_url,approved&approved=eq.false&order=id.desc'
+                    params: { select: 'id,name,city,description,logo_url,approved', approved: false, order: 'id.desc' }
                 });
                 const items = Array.isArray(data) ? data.map(normalizeListing) : [];
                 pendingItems = items;
@@ -1308,33 +1294,19 @@
 
         async function uploadFileToStorage(file) {
             const fileName = `${Date.now()}-${sanitizeFileName(file.name)}`;
-            const uploadUrl = `${SUPABASE_STORAGE_URL}/object/${SUPABASE_STORAGE_BUCKET}/${encodeURIComponent(fileName)}`;
+            const { data, error } = await supabase.storage
+                .from('advertisements')
+                .upload(fileName, file);
 
-            const response = await fetch(uploadUrl, {
-                method: 'PUT',
-                headers: {
-                    apikey: SUPABASE_ANON_KEY,
-                    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-                    'Content-Type': file.type,
-                    'Cache-Control': 'no-cache',
-                    Pragma: 'no-cache'
-                },
-                body: file
-            });
-
-            if (!response.ok) {
-                const text = await response.text();
-                let parsed = null;
-                try {
-                    parsed = text ? JSON.parse(text) : null;
-                } catch (_) {
-                    // ignore invalid JSON response
-                }
-                const responseMessage = parsed?.message || text || response.statusText;
-                throw new Error(`Storage upload failed (${response.status}): ${responseMessage}`);
+            if (error) {
+                throw new Error(`Storage upload failed: ${error.message}`);
             }
 
-            return getStoragePublicUrl(fileName);
+            const { data: urlData } = supabase.storage
+                .from('advertisements')
+                .getPublicUrl(fileName);
+
+            return urlData.publicUrl;
         }
 
         async function submitAdvertisement(event) {
@@ -1404,26 +1376,11 @@
             if (!confirmApprove) return;
 
             try {
-                const url = `${SUPABASE_REST_URL}/advertisements?id=eq.${encodeURIComponent(id)}&_=${Date.now()}`;
-                const response = await fetch(url, {
+                await supabaseRequest('advertisements', {
                     method: 'PATCH',
-                    headers: {
-                        apikey: SUPABASE_ANON_KEY,
-                        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-                        Accept: 'application/json',
-                        'Content-Type': 'application/json',
-                        Prefer: 'return=representation',
-                        'Cache-Control': 'no-cache',
-                        'Pragma': 'no-cache'
-                    },
-                    body: JSON.stringify({ approved: true })
+                    body: { approved: true },
+                    params: { id: id }
                 });
-
-                const text = await response.text();
-                const data = text ? JSON.parse(text) : null;
-                if (!response.ok) {
-                    throw new Error(data?.message || `Supabase request failed: ${response.status}`);
-                }
 
                 showMessage('✓ Հայտարարությունը հաջողությամբ հաստատվեց։');
                 if (isAdmin) removePendingCard(id);
