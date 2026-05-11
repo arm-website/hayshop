@@ -851,6 +851,7 @@
                 apikey: SUPABASE_ANON_KEY,
                 Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
                 Accept: 'application/json',
+                'Cache-Control': 'no-cache',
                 ...headers
             };
 
@@ -1038,7 +1039,7 @@
 
             try {
                 const data = await supabaseRequest('advertisements', {
-                    params: 'select=*,created_at&order=created_at.desc'
+                    params: 'select=*,created_at&order=approved.desc,created_at.desc'
                 });
                 listings = Array.isArray(data) ? data.map(normalizeListing) : [];
                 state.currentPage = 1;
