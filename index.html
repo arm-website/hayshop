@@ -383,6 +383,25 @@
             flex-wrap: wrap;
             margin-bottom: 18px;
         }
+        .admin-pending-toolbar {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr auto;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .admin-pending-toolbar input,
+        .admin-pending-toolbar select {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px 14px;
+            background: #ffffff;
+            color: var(--surface-soft);
+        }
+        .admin-pending-toolbar button {
+            align-self: stretch;
+            white-space: nowrap;
+        }
         .admin-pill {
             display: inline-flex;
             align-items: center;
@@ -393,6 +412,29 @@
             color: var(--surface-soft);
             font-size: 0.95rem;
             font-weight: 600;
+        }
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+        .admin-stat-card {
+            padding: 18px;
+            background: #f8fafc;
+            border-radius: 20px;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            box-shadow: inset 0 0 0 rgba(255,255,255,0.75);
+        }
+        .admin-stat-card strong {
+            display: block;
+            font-size: 1.4rem;
+            color: var(--surface-soft);
+            margin-bottom: 8px;
+        }
+        .admin-stat-card span {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
         }
         .admin-pending-list {
             display: grid;
@@ -409,6 +451,12 @@
             border-radius: 20px;
             padding: 18px;
             box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+        }
+        .admin-pending-card img {
+            width: 100%;
+            max-height: 180px;
+            object-fit: cover;
+            border-radius: 16px;
         }
         .admin-pending-card .card-header {
             display: flex;
@@ -650,6 +698,33 @@
                 <div class="admin-info-bar">
                     <span id="adminPendingCount" class="admin-pill">Բեռնում է...</span>
                 </div>
+                <div class="admin-pending-toolbar">
+                    <input id="adminPendingSearch" type="search" placeholder="Որոնել հայտի անունը կամ նկարագրությունը" aria-label="Որոնել pending հայտեր">
+                    <select id="adminPendingCity" aria-label="Ֆիլտր pending հայտերը քաղաքի համար">
+                        <option value="">Բոլոր քաղաքները</option>
+                        <option value="Երևան">Երևան</option>
+                        <option value="Գյումրի">Գյումրի</option>
+                        <option value="Վանաձոր">Վանաձոր</option>
+                        <option value="Արտաշատ">Արտաշատ</option>
+                        <option value="Մասիս">Մասիս</option>
+                        <option value="Սևան">Սևան</option>
+                    </select>
+                    <button type="button" class="btn btn-secondary btn-sm" id="adminPendingRefresh">Թարմացնել</button>
+                </div>
+                <div class="admin-stats">
+                    <div class="admin-stat-card">
+                        <strong id="adminTotalCount">-</strong>
+                        <span>Ընդհանուր հայտեր</span>
+                    </div>
+                    <div class="admin-stat-card">
+                        <strong id="adminApprovedCount">-</strong>
+                        <span>Հաստատված հայտեր</span>
+                    </div>
+                    <div class="admin-stat-card">
+                        <strong id="adminPendingSummary">-</strong>
+                        <span>Սպասող հայտեր</span>
+                    </div>
+                </div>
                 <h4>Սպասման տակ գտնվող հայտարարություններ</h4>
                 <div id="adminPendingList" class="admin-pending-list"></div>
                 <div class="modal-actions">
@@ -681,12 +756,16 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ1bHlmcGdqdWpvZXZ2ZnVvbG1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0ODE2MDUsImV4cCI6MjA5NDA1NzYwNX0._JoE2HYtZDxH8o9livkXS-DQAOLz1ea0qJ-XcGr0wlw';
 
         let listings = [];
+        let pendingItems = [];
         let isAdmin = false;
 
         const state = {
             listingGrid: null,
             searchInput: null,
-            citySelect: null
+            citySelect: null,
+            adminPendingSearch: null,
+            adminPendingCity: null,
+            adminRefreshButton: null
         };
 
         function showMessage(text) {
@@ -733,7 +812,8 @@
                 city: item.city || 'Առկա չէ',
                 description: item.description || 'Նկարագրություն չկա։',
                 logo: item.logo_url || 'https://via.placeholder.com/640x480?text=HayShop',
-                approved: Boolean(item.approved)
+                approved: Boolean(item.approved),
+                createdAt: item.created_at || ''
             };
         }
 
@@ -845,12 +925,16 @@
                     params: 'select=*,created_at&approved=eq.false&order=created_at.desc'
                 });
                 const items = Array.isArray(data) ? data.map(normalizeListing) : [];
-                renderPendingAdmin(items);
+                pendingItems = items;
+                renderPendingAdmin(filterPendingAdmin());
                 updateAdminPendingCount(items.length);
+                updateAdminSummary(items);
             } catch (error) {
                 console.error('Load pending admin failed:', error);
                 pendingList.innerHTML = '<div class="empty-state">Սխալ տեղի ունեցավ սպասման տակ գտնվող հայտարարությունները բեռնելիս։</div>';
+                pendingItems = [];
                 updateAdminPendingCount(0);
+                updateAdminSummary([]);
             }
         }
 
@@ -858,6 +942,36 @@
             const badge = document.getElementById('adminPendingCount');
             if (!badge) return;
             badge.textContent = count ? `Սպասում է ${count} հայտ` : 'Ոչ մի հայտ չի սպասում';
+        }
+
+        function removePendingCard(id) {
+            const card = document.querySelector(`.admin-pending-card[data-id="${id}"]`);
+            if (card) card.remove();
+        }
+
+        function filterPendingAdmin() {
+            const searchValue = state.adminPendingSearch?.value.trim().toLowerCase() || '';
+            const selectedCity = state.adminPendingCity?.value || '';
+
+            return pendingItems.filter(item => {
+                if (selectedCity && item.city !== selectedCity) return false;
+                if (!searchValue) return true;
+                return item.name.toLowerCase().includes(searchValue) || item.description.toLowerCase().includes(searchValue);
+            });
+        }
+
+        function updateAdminSummary(pendingItems) {
+            const total = listings.length;
+            const approved = listings.filter(item => item.approved).length;
+            const pending = pendingItems.length;
+
+            const totalEl = document.getElementById('adminTotalCount');
+            const approvedEl = document.getElementById('adminApprovedCount');
+            const pendingEl = document.getElementById('adminPendingSummary');
+
+            if (totalEl) totalEl.textContent = `${total}`;
+            if (approvedEl) approvedEl.textContent = `${approved}`;
+            if (pendingEl) pendingEl.textContent = `${pending}`;
         }
 
         function renderPendingAdmin(items) {
@@ -874,6 +988,14 @@
             items.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'admin-pending-card';
+                card.dataset.id = item.id;
+
+                if (item.logo) {
+                    const image = document.createElement('img');
+                    image.src = item.logo;
+                    image.alt = item.name;
+                    card.appendChild(image);
+                }
 
                 const header = document.createElement('div');
                 header.className = 'card-header';
@@ -882,10 +1004,17 @@
                 title.textContent = item.name;
                 header.appendChild(title);
 
-                const meta = document.createElement('span');
-                meta.className = 'card-meta';
-                meta.textContent = item.city;
-                header.appendChild(meta);
+                const metaCity = document.createElement('span');
+                metaCity.className = 'card-meta';
+                metaCity.textContent = item.city;
+                header.appendChild(metaCity);
+
+                const metaDate = document.createElement('span');
+                metaDate.className = 'card-meta';
+                metaDate.textContent = item.createdAt ? new Date(item.createdAt).toLocaleDateString('hy-AM', {
+                    year: 'numeric', month: 'short', day: 'numeric'
+                }) : '';
+                header.appendChild(metaDate);
 
                 card.appendChild(header);
 
@@ -997,6 +1126,15 @@
             form.style.pointerEvents = isBusy ? 'none' : '';
         }
 
+        async function fileToDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error('Cannot read file')); 
+                reader.readAsDataURL(file);
+            });
+        }
+
         async function submitAdvertisement(event) {
             event.preventDefault();
             const form = event.currentTarget;
@@ -1026,11 +1164,12 @@
                     return;
                 }
 
+                const logoUrl = await fileToDataUrl(logoFile);
                 const newListing = {
                     name,
                     city,
                     description,
-                    logo_url: 'https://via.placeholder.com/640x480?text=HayShop',
+                    logo_url: logoUrl,
                     approved: false
                 };
 
@@ -1062,6 +1201,7 @@
                     method: 'PATCH',
                     body: { approved: true }
                 });
+                if (isAdmin) removePendingCard(id);
                 await loadListings();
                 if (isAdmin) await loadPendingAdmin();
             } catch (error) {
@@ -1077,6 +1217,7 @@
                 await supabaseRequest(`advertisements?id=eq.${id}`, {
                     method: 'DELETE'
                 });
+                if (isAdmin) removePendingCard(id);
                 await loadListings();
                 if (isAdmin) await loadPendingAdmin();
             } catch (error) {
@@ -1182,6 +1323,9 @@
             state.listingGrid = document.getElementById('listingGrid');
             state.searchInput = document.getElementById('searchInput');
             state.citySelect = document.getElementById('citySelect');
+            state.adminPendingSearch = document.getElementById('adminPendingSearch');
+            state.adminPendingCity = document.getElementById('adminPendingCity');
+            state.adminRefreshButton = document.getElementById('adminPendingRefresh');
 
             const form = document.getElementById('avelacmanForm');
             if (form) {
@@ -1193,6 +1337,15 @@
             }
             if (state.citySelect) {
                 state.citySelect.addEventListener('change', updateListings);
+            }
+            if (state.adminPendingSearch) {
+                state.adminPendingSearch.addEventListener('input', () => renderPendingAdmin(filterPendingAdmin()));
+            }
+            if (state.adminPendingCity) {
+                state.adminPendingCity.addEventListener('change', () => renderPendingAdmin(filterPendingAdmin()));
+            }
+            if (state.adminRefreshButton) {
+                state.adminRefreshButton.addEventListener('click', loadPendingAdmin);
             }
 
             document.querySelectorAll('.modal').forEach(modal => {
